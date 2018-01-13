@@ -1,0 +1,13 @@
+<div>
+    <%= form_tag({'controller' => 'bookings', 'action' => 'new_message'}, :remote => true) do %>
+        <%= text_area_tag "message", "", :placeholder => "Write your message..", :size => '47x5', :id => "message_form" %>
+        <%= hidden_field_tag "booking_id", booking_id %>
+        <%= submit_tag "Submit" %>
+    <% end %>
+
+    <%= form_tag({'controller' => 'bookings', 'action' => 'new_message'}, :remote => true) do %>
+        <%= hidden_field_tag "refresh", "1" %>
+        <%= hidden_field_tag "booking_id", booking_id %>
+        <%= submit_tag "Refresh" %>
+    <% end %>
+</div>

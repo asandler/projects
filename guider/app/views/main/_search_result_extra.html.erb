@@ -1,0 +1,48 @@
+<table width="100%"><tr><td width="90%">
+<div id="route_name_full">
+    <center><b><%= res.name %></b></center>
+</div>
+</td><td align="right"><div id="close_extra" style="margin-right: 10px;" class="hidden">
+    <%= image_tag "close-icon.png", :size => "20" %>
+</div></td></tr></table>
+
+<table><tr><td style="width: 450px;">
+    <% photos = RoutePhoto.where(route_id: res.id) %>
+      <ul class="bxslider">
+          <% if photos.any? %>
+            <% photos.each do |ph|%>
+            <li>
+                <%= image_tag ph.photo.url(:medium) %>
+            </li>
+            <% end %>
+          <% else %>
+            <li>
+              <%= image_tag "no-image-300-400.png" %>
+            </li>
+          <% end %>
+      </ul>
+</td><td align="center" valign="top">
+    <div>
+        <center>
+
+            <%= link_to(image_tag(res.user.avatar.url(:little)), profile_path(:user_id => res.user.id)) %><br>
+            <%= link_to res.user.first_name + " " + res.user.last_name, profile_path(:user_id => res.user.id) %>
+
+            <br><br><br><br>
+
+            <font style="font-size: 14pt;">
+                <b><%= res.price %></b> RUB<br>
+            </font>
+
+            <div><span class="ui-icon ui-icon-clock" style="display: inline-block"></span><%= res.hours %> h <%= res.minutes %> m</div>
+
+            <br>
+            <% if show_book %>
+                <%= button_to "Book", book_route_path(res.id), :method => :get, :id => "button_book", :class => "ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" %>
+            <% end %>
+        </center>
+    </div>
+</td></tr></table>
+<div class="route-full-description">
+    <%= res.description %>
+</div>

@@ -1,0 +1,26 @@
+// Place all the styles related to the Users controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+
+.little_text_tag {
+    width: 100px;
+}
+
+.personal_navigation {
+    margin-top: 20px;
+    height: 100vh;
+}
+
+.personal_navigation ul {
+    list-style-type: none;
+}
+
+.personal_navigation a {
+    text-decoration: none;
+    font-size: 12pt;
+    color: #0047ab;
+}
+
+#nav_table {
+    height: 100vh;
+}

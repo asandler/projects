@@ -1,0 +1,14 @@
+<center>
+<div class="find_background">
+<font color="white" style="font-family: Geneva, Arial, Helvetica, sans-serif"><h1>Find local guides everywhere</h1></font>
+<div class="find_div">
+<%= form_tag({:controller => 'main', :action => 'search'}) do |f| %>
+    <label>City:</label>
+    <%= select_tag "city_id", options_from_collection_for_select(@cities, "id", "name") %> 
+    <%= text_field_tag 'arrive', '', :class => "datepicker ui-widget ui-widget-content ui-state-default ui-corner-all", :placeholder => "Arrive" %>
+    <%= text_field_tag 'depart', '', :class => "datepicker ui-widget ui-widget-content ui-state-default ui-corner-all", :placeholder => "Depart" %>
+    <%= submit_tag 'Go', :class => "ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only", :id => "go" %>
+<% end %>
+</div>
+</div>
+</center>

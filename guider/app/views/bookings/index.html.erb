@@ -1,0 +1,158 @@
+<table id="nav_table"><tr><td width="150px" valign="top">
+    <%= render 'main/personal_navigation' %>
+</td><td valign="top" style="width:100%;">
+
+    <table width="100%"><tr><td width="50%" valign="top">
+        <div id="bookings">
+        <% if @bookings.empty? %>
+            <div>
+                No bookings so far
+            </div>
+        <% else %>
+            <div class="table-wrapper">
+                <% @bookings.each do |b| %>
+                    <% s = Route.find(b.route_id) %>
+                    <% d = b.date %>
+                    <% f = Date.new(d[0..3].to_i, d[5..6].to_i, d[8..9].to_i) %>
+                    <div>
+                        <%= render :partial => 'main/search_result', :locals => {:id => b.id, :res => s, :cancel => true, :book => false, :edit_n_delete => false, :booking_id => b.id, :date => f} %>
+                    </div>
+                <% end %>
+            </div>
+        <% end %>
+        </div>
+    </td><td width="50%" valign="top" style="position: relative;" id="right_column">
+        <div id="sticky">
+        </div>
+    </td></tr></table>
+
+</td></tr></table>
+
+<%= javascript_tag do %>
+    $("#sticky").css({"visibility": "hidden"});
+
+    function debounce(func, wait, immediate) {
+        var timeout;
+        return function() {
+                var context = this, args = arguments;
+                var later = function() {
+                        timeout = null;
+                        if (!immediate) func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+        };
+    };
+
+    var sticky_relocate = debounce(function() {
+        var sticky_top = $(window).scrollTop();
+        var anchor_top = $('#bookings').offset().top;
+
+        var anchor_bottom = anchor_top + $('#bookings').height() - 34;
+        var sticky_bottom = sticky_top + $(window).height() * 0.95 - 20;
+
+        var promo = $('#become_a_guide_promo');
+        if (promo.offset()) {
+            if (promo.offset().top - 40 > anchor_bottom) {
+                anchor_bottom = promo.offset().top - 40;
+            }
+        }
+
+        var w = $('#right_column').width() - 20;
+
+        if (anchor_top < sticky_top) {
+            if (sticky_bottom > anchor_bottom) {
+                $('#sticky').removeClass('stick');
+                $('#sticky').addClass('stick_bottom');
+                var h = $(window).height() * 0.95;
+                $("#sticky").css({top: anchor_bottom - h - 87, height: h, width: w});
+            } else {
+                $('#sticky').removeClass('stick_bottom');
+                $('#sticky').addClass('stick');
+                var h = $(window).height() * 0.95;
+                $("#sticky").css({top: 10, height: h, width: w});
+            }
+        } else {
+            $('#sticky').removeClass('stick_bottom');
+            $('#sticky').removeClass('stick');
+            var h = sticky_top + $(window).height() - anchor_top - 10;
+            if (anchor_bottom - anchor_top - 20 < h) {
+                if (anchor_bottom - anchor_top - 20 > 600) {
+                    h = anchor_bottom - anchor_top - 20;
+                }
+            }
+            $("#sticky").css({height: h, width: w});
+        }
+    }, 1);
+
+    $(window).on("load", sticky_relocate);
+    $(window).on("scroll", sticky_relocate);
+
+
+    $(".search-result").click(function(event) {
+        event = event || window.event;
+        var t = event.target || event.srcElement;
+
+        $('.search-result').each(function() {
+            $(this).css({"background" : "#eeeeee"});
+        });
+
+        res_id = -1;
+        var flag = false;
+        var flag2 = false;
+        for (var i = 0; i < 8; i++) {
+            if ((t.id == "user_avatar") || (t.id == "user_link")) {
+                flag2 = true;
+            }
+            if (t.id == "button_msg") {
+                flag = true;
+            }
+            if (t.className == "search-result") {
+                res_id = t.id;
+                $('#' + res_id).css({"background" : "#cccccc"});
+                if (flag2) {
+                    return;
+                }
+                break;
+            }
+            t = t.parentNode;
+        }
+
+        if (!flag) {
+            <% @bookings.each do |b| %>
+                if (parseInt('<%=j b.id.to_s %>') == res_id) {
+                    <% res = Route.find(b.route_id) %>
+                    var str = "<%=j render(:partial => 'main/search_result_extra', :locals => {:res => res, :show_book => false}) %>";
+                    $("#sticky").html(str);
+                    $("#sticky").css({"visibility": "visible"});
+                    $('.bxslider').bxSlider({
+                        slideWidth: 400,
+                    });
+                }
+            <% end %>
+        } else {
+            <% @bookings.each do |b| %>
+                var t = parseInt('<%=j b.id.to_s %>');
+                if (t == res_id) {
+                    "<%=j @cur_booking_id = b.id.to_s %>";
+                    "<%=j @names = b.user_id.to_s + ":" %>";
+                    "<%=j @names += User.find(b.user_id).first_name.to_s + ":" %>";
+                    "<%=j @names += b.guide_id.to_s + ":" %>";
+                    "<%=j @names += User.find(b.guide_id).first_name.to_s %>";
+
+                    str = "<div id=\"messages\" style=\"height: 65vh; overflow: auto;\">";
+                    str += "<%=j render(:partial => 'all_messages', :locals => {:messages => Message.where(booking_id: @cur_booking_id), :names => @names})%>";
+                    str += "</div><br><div id=\"send_form\">";
+                    str += "<%=j render(:partial => 'new_message', :locals => {:booking_id => @cur_booking_id.to_i})%>";
+                    str += "</div>";
+                    $("#sticky").html(str);
+                }
+            <% end %>
+
+            $("#sticky").css({"visibility": "visible"});
+            sticky_relocate();
+        }
+    });
+<% end %>

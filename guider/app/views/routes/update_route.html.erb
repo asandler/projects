@@ -1,0 +1,68 @@
+<table><tr><td width="150px" valign="top">
+    <%= render 'main/personal_navigation' %>
+</td><td>
+
+<%= form_tag({:controller => 'routes', :action => 'update_route'}, {:multipart => true}) do |f| %>
+    <table>
+    <tr><td>
+        Name:
+    </td><td>
+        <%= text_field_tag 'name', @route.name %>
+    </td></tr>
+    <tr><td>
+        City:
+    </td><td>
+        <%= select_tag "city_id", options_from_collection_for_select(@cities, "id", "name", @route.city.id) %> 
+    </td></tr>
+    <tr><td>
+        Price:
+    </td><td>
+        <%= text_field_tag 'price', @route.price %><br>
+    </td></tr>
+    <tr><td>
+        Hours/Minutes:
+    </td><td>
+        <%= text_field_tag 'hours', @route.hours, :class => "little_text_tag" %> /
+        <%= text_field_tag 'minutes', @route.minutes, :class => "little_text_tag" %><br>
+    </td></tr>
+    <tr><td>
+        About:
+    </td><td>
+        <%= text_area_tag 'description', @route.description, :placeholder => "Describe the tour...", :size => '47x5' %>
+    </td></tr>
+    <tr><td>
+        Tags:
+    </td><td>
+        <%= collection_select :city_tag, 'tags', CityTag.all, :value, :value, {selected: @route.city_tags}, {multiple: true, class: "chosen-select"} %>
+    </td></tr>
+    <tr><td>
+        Dates:
+    </td><td>
+        <div id="with-pre-selected-dates" type="text"></div>
+        <%= hidden_field_tag 'date_array' %>
+    </td></tr>
+    <tr><td>
+        Add photo:
+    </td><td>
+        <%= file_field_tag :photo %>
+    </td></tr>
+    <tr><td>
+        Description:
+    </td><td>
+        <%= text_field_tag :photo_description %>
+    </td></tr>
+    </table>
+    <%= hidden_field_tag 'route_id', @route.id %>
+    <%= submit_tag "Save" %>
+    <br>
+    <ul class="bxslider">
+    <% RoutePhoto.where(route_id: @route.id).each do |ph| %>
+        <li>
+            <%= image_tag ph.photo.url(:medium) %>
+        </li>
+    <% end %>
+    </ul>
+<% end %>
+
+</td></tr>
+</table>

@@ -1,0 +1,13 @@
+<% if names %>
+    <% ar = names.split(":") %>
+
+    <% h = {} %>
+    <% h[ar[0].to_i] = ar[1] %>
+    <% h[ar[2].to_i] = ar[3] %>
+
+    <% messages.each do |m| %>
+        <div class="message">
+            <%= h[m.user_id] %>: <%= m.message %>
+        </div>
+    <% end %>
+<% end %>

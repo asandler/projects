@@ -1,0 +1,44 @@
+<% if @search_results.size == 0 %>
+    $("#search_results").html("Sorry, nothing found :( <br>Please change search parameters, and we will find you something suitable.<br>Good luck!");
+<% else %>
+    var str = "<div class=\"table-wrapper\">";
+    <% @search_results.each do |res| %>
+        str += "<%=j render(:partial => 'search_result', :locals => {:res => res, :edit_n_delete => false, :book => true}) %>";
+    <% end %>
+    str += "</div>";
+    $("#search_results").html(str);
+<% end %>
+
+$("#sticky").css({"visibility": "hidden"});
+
+$(".search-result").click(function(event) {
+    event = event || window.event;
+    var t = event.target || event.srcElement;
+
+    $('.search-result').each(function() {
+        $(this).css({"background" : "#eeeeee"});
+    });
+
+    res_id = -1;
+    for (var i = 0; i < 8; i++) {
+        if (t.className == "search-result") {
+            res_id = t.id;
+            $('#' + res_id).css({"background" : "#cccccc"});
+            break;
+        }
+        t = t.parentNode;
+    }
+
+    var tmp = -2;
+    <% @search_results.each do |res| %>
+        tmp = parseInt('<%=j res.id.to_s %>');
+        if (tmp == res_id) {
+            var str = "<%=j render(:partial => 'search_result_extra', :locals => {:res => res, :show_book => true}) %>";
+            $("#sticky").html(str);
+            $("#sticky").css({"visibility": "visible"});
+            $('.bxslider').bxSlider({
+                slideWidth: 400,
+            });
+        }
+    <% end %>
+});

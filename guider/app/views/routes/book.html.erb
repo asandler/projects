@@ -1,0 +1,28 @@
+<% if current_user %>
+    <table class="book-table"><tr><td width="50%" valign="top">
+        Almost booked!
+        <br>
+        Here will be payment processing form
+        <br>
+        <br>
+        <%= form_tag({:controller => "bookings", :action => "new"}) do %>
+            <%= text_area_tag "message", "", :placeholder => "Say something to #{@guide.first_name}...", :size => '47x5' %>
+            <%= hidden_field_tag "guide_id", @guide.id %>
+            <br>
+            <br>
+            <%= submit_tag "Book", :id => "button_book", :class => "ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" %>
+        <% end %>
+    </td><td>
+        <div class="route-full search-result-extra">
+            <%= render :partial => 'main/search_result_extra', :locals => {res: @route, show_book: false} %>
+        </div>
+    </td></tr></table>
+
+    <%= javascript_tag do %>
+        $('.bxslider').bxSlider({
+            slideWidth: 400,
+        });
+    <% end %>
+<% else %>
+    Register first, please.
+<% end %>

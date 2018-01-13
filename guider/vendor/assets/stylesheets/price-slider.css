@@ -1,0 +1,12 @@
+.span4{width:300px;}
+@media (max-width:480px){
+    .span4{width:228px;}
+    .row-fluid>.span4{width:31.491712705%;}
+    input.span4,textarea.span4,.uneditable-input.span4{width:218px;}
+}
+@media (min-width:1200px){
+    [class*="span"]{float:left;}
+    .span4{width:370px;}
+    .row-fluid>.span4{width:31.623931624%;}
+    input.span4,textarea.span4,.uneditable-input.span4{width:360px;}
+}

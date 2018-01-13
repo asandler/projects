@@ -1,0 +1,84 @@
+<% if defined? id %>
+    <div class="search-result" id="<%= id %>">
+<% else %>
+    <div class="search-result" id="<%= res.id %>">
+<% end %>
+<table class="search-result-table" width="100%"><tr>
+    <td width="15%" valign="top">
+    <center>
+    <%= link_to(image_tag(res.user.avatar.url(:little)), profile_path(:user_id => res.user.id), :id => "user_avatar") %><br>
+    <%= link_to res.user.first_name + " " + res.user.last_name, profile_path(:user_id => res.user.id), :id => "user_link" %>
+    </center>
+    </td>
+    <td width="65%">
+        <font style="font-size: 16pt;">
+            <b><%= res.name %></b><br>
+        </font>
+        <% res.city_tags.each_with_index do |tag, ind| %>
+            <% if ind < res.city_tags.size - 1 %>
+                <i><%= tag %></i>,
+            <% else %>
+                <i><%= tag %></i>
+            <% end %>
+        <% end %><br>
+        <br>
+        <div class="search-result-about">
+        <%= truncate(res.description, :length => 100, :separator => ' ') %>
+        </div>
+        <br>
+        <div>
+        <span class="ui-icon ui-icon-clock" style="display: inline-block"></span><%= res.hours %> h <%= res.minutes %> m
+        </div>
+        Languages:
+        <% res.user.lang_array.each_with_index do |lang, ind| %>
+            <% if ind < res.user.lang_array.size - 1 %>
+                <%= lang %>,
+            <% else %>
+                <%= lang %>
+            <% end %>
+        <% end %><br>
+    </td>
+        <% if edit_n_delete %>
+            <td style="position: relative;">
+            <div style="position: absolute; right: 7px; top: 60px;">
+                <b><%= res.price %></b> RUB
+            </div>
+            <div style="position: absolute; bottom: 5px; right: 5px;" align="center">
+                <%= button_to "Edit", update_route_path(:route_id => res.id), :method => :get, :id => "button_edit", :class => "ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" %>
+                <br>
+                <%= link_to "Delete", delete_route_path(:route_id => res.id), :method => :post, data: {confirm: 'Are you sure?' } %>
+            </div>
+        <% elsif book %>
+            <td style="position: relative;">
+            <div style="position: absolute; right: 5px; top: 50%; transform: translate(0%,-100%);">
+                <font style="font-size: 14pt;">
+                    <b><%= res.price %></b> RUB
+                </font>
+            </div>
+            <div style="position: absolute; bottom: 5px; right: 5px;">
+                <%= button_to "Book", book_route_path(res.id), :method => :get, :id => "button_book", :class => "ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" %>
+            </div>
+        <% elsif cancel %>
+            <td style="position: relative;">
+            <div style="position: absolute; right: 5px; top: 5px; width: 150px;" align="right">
+                <font style="font-size: 14pt;">
+                    <b><%= date.httpdate[5..15] %></b>
+                </font>
+            </div>
+            <div style="position: absolute; right: 5px; bottom: 80px;" align="right">
+                <font style="font-size: 14pt;">
+                    <b><%= res.price %></b> RUB
+                </font>
+            </div>
+            <div style="position: absolute; bottom: 5px; right: 5px;" align="center">
+                <%= button_tag "Messages", :method => :get, :id => "button_msg", :class => "ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" %>
+                <br>
+                <br>
+                <%= link_to "Cancel", delete_booking_path(booking_id), :method => :post, data: {confirm: 'Are you sure?'} %>
+            </div>
+        <% else %>
+            <td align="right" valign="center">
+            <b><%= res.price %></b> RUB
+        <% end %>
+    </td></tr></table>
+</div>

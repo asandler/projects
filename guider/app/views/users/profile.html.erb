@@ -1,0 +1,72 @@
+<table id="nav_table"><tr><td width="150px" valign="top">
+    <%= render 'main/personal_navigation' %>
+</td><td valign="top">
+
+
+<table><tr><td width="30%">
+    <%= image_tag @user.avatar.url(:thumb) %>
+    <br>
+    <% @diff = DateTime.now.to_i - @user.created_at.to_i %>
+    <% @days = @diff / (60 * 60 * 24) %>
+    <% @months = @days / 30 %>
+    <% @years = @days / 365 %>
+    <% @days = @days % 30 %>
+
+    <% if @years > 0 %>
+        <%= @years %> <%='year'.pluralize(@years) %>
+        <%if @months > 0 %>
+            <%= @months %> <%='month'.pluralize(@months) %>
+        <% end %>
+        on Guider
+    <% else %>
+        <%if @months > 0 %>
+            <%= @months%> <%='month'.pluralize(@months) %>
+        <% end %>
+        <%if @days > 0 %>
+            <%= @days %> <%= 'day'.pluralize(@days) %>
+        <% end %>
+        on Guider
+    <% end %>
+</td><td>
+    <table width="400px">
+        <tr><td>
+            <% if @user.first_name and @user.first_name != "" %>
+                <font style="font-size: 16pt;"><b><%= @user.first_name %></b></font>
+            <% else %>
+                <b>Name</b>
+            <% end %>
+            <% if @user.last_name and @user.last_name != "" %>
+                <font style="font-size: 16pt;"><b><%= @user.last_name %></b></font>
+            <% else %>
+                <b>not set</b>
+            <% end %>
+        </td></tr>
+
+        <tr><td>
+            e-mail: <%= @user.email %>
+        </td></tr>
+
+        <tr><td>
+            Languages:
+            <% @user.lang_array.each_with_index do |lang, ind| %>
+                <% if ind + 1 < @user.lang_array.size %>
+                    <%= lang %>,
+                <% else %>
+                    <%= lang %>
+                <% end %>
+            <% end %>
+        </td></tr>
+
+        <tr><td>
+            About:
+            <%= @user.about %>
+        </td></tr>
+    </table>
+
+    <% if @me %>
+        <br>
+        <%= button_to "Edit", :edit_profile, :method => :get, :id => "button_edit", :class => "ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only" %>
+    <% end %>
+
+</td></tr></table>
+</table>

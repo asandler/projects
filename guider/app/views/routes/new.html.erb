@@ -1,0 +1,64 @@
+<table><tr><td width="150px" valign="top">
+    <%= render 'main/personal_navigation' %>
+</td><td valign="top">
+
+<% if @route.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@route.errors.count, "error") %> prohibited this user from being saved:</h2>
+
+      <ul>
+      <% @route.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+<% end %>
+
+<h2>Add new route:</h2>
+
+<%= form_for @route do |f| %>
+    <table>
+    <tr><td>
+        Name:
+    </td><td>
+        <%= f.text_field 'name' %>
+    </td></tr>
+    <tr><td>
+        City:
+    </td><td>
+        <%= f.select 'city_id', options_from_collection_for_select(@cities, "id", "name"), {}, :id => "city_id" %>
+    </td></tr>
+    <tr><td>
+        Price:
+    </td><td>
+        <%= f.text_field 'price' %><br>
+    </td></tr>
+    <tr><td>
+        Hours/Minutes:
+    </td><td>
+        <%= f.text_field 'hours', :class => "little_text_tag" %> /
+        <%= f.text_field 'minutes', :class => "little_text_tag" %><br>
+    </td></tr>
+    <tr><td>
+        About:
+    </td><td>
+        <%= text_area_tag 'description', @route.description, :placeholder => "Describe the tour...", :size => '47x5' %>
+    </td></tr>
+    <tr><td>
+        Tags:
+    </td><td>
+        <%= f.collection_select :city_tags, CityTag.all, :value, :value, {}, {multiple: true, class: "chosen-select"} %>
+    </td></tr>
+    <tr><td>
+        Dates:
+    </td><td>
+        <div id="with-dates" type="text"></div>
+        <%= f.hidden_field 'date_array' %>
+    </td></tr>
+    </table>
+    <%= f.hidden_field 'user_id', :value => current_user.id %>
+    <%= f.submit "Save" %>
+<% end %>
+
+</td></tr>
+</table>
