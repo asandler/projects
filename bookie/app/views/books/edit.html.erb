@@ -1,0 +1,23 @@
+<h1>Editing book</h1>
+
+<%= form_tag do %>
+    <table>
+        <tr>
+            <td><strong>Title:</strong></td>
+            <td><%= text_field_tag("title", @book.title, size: 30) %></td>
+        </td>
+        <tr>
+            <td><strong>Author:</strong></td>
+            <td><%= text_field_tag("author", @book.author, size: 30) %></td>
+        </td>
+        <tr>
+            <td><strong>Description:</strong></td>
+            <td><%= text_area_tag("description", @book.description, size: "140x10") %></td>
+        </td>
+    </table>
+    <br>
+    <br>
+    <%= submit_tag("Сохранить") %>
+<% end %>
+ 
+<%= link_to 'Back', books_path %>

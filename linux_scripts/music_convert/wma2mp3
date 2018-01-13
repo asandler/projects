@@ -1,0 +1,6 @@
+find . -name "*.wma"\
+    -exec echo "Converting: " {} \; \
+    \( -exec mplayer -vo null -vc dummy -af resample=44100 -ao pcm:waveheader -msglevel all=0 {} \; -o -exec true \; \) \
+    \( -exec lame -m s -V 3 --silent audiodump.wav \; -o -exec true \; \) \
+    -exec sh -c 'mv audiodump.mp3 "${1%.wma}.mp3"' echo {} \; \
+    -exec rm audiodump.wav \;

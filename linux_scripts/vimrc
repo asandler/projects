@@ -1,0 +1,87 @@
+syntax on
+set nowrap
+set nocompatible
+set number
+set expandtab "insert spaces instead of tab
+set softtabstop=4
+set shiftwidth=4
+set rulerformat=%40(%t%=[0x%B\ \ %l,%c\ %p%%]%)
+set ruler
+set ignorecase
+set backspace=2
+set background=dark
+set smartindent
+set autoindent
+set fileencodings=ucs-bom,utf-8,default,cp1251,latin1
+set makeprg=!./build.sh
+set tags+=tags;/    
+set viminfo='10,\"100,:20,%,n~/.viminfo
+
+autocmd FileType python set omnifunc=pythoncomplete#Complete commentstring=#%s# foldmethod=indent | %foldopen! | set softtabstop=4 | set shiftwidth=4
+autocmd FileType html set omnifunc=htmlcomplete#CompleteTags commentstring=<!--%s-->
+autocmd FileType xml set omnifunc=xmlcomplete#CompleteTags   commentstring=<!--%s-->
+autocmd FileType css set omnifunc=csscomplete#CompleteCSS
+autocmd FileType php set omnifunc=phpcomplete#CompletePHP
+autocmd FileType javascript set omnifunc=javascriptcomplete#CompleteJS
+autocmd FileType c set omnifunc=ccomplete#Complete
+
+
+" when we reload, tell vim to restore the cursor to the saved position
+augroup JumpCursorOnEdit
+ au!
+ autocmd BufReadPost *
+ \ if expand("<afile>:p:h") !=? $TEMP |
+ \ if line("'\"") > 1 && line("'\"") <= line("$") |
+ \ let JumpCursorOnEdit_foo = line("'\"") |
+ \ let b:doopenfold = 1 |
+ \ if (foldlevel(JumpCursorOnEdit_foo) > foldlevel(JumpCursorOnEdit_foo - 1)) |
+ \ let JumpCursorOnEdit_foo = JumpCursorOnEdit_foo - 1 |
+ \ let b:doopenfold = 2 |
+ \ endif |
+ \ exe JumpCursorOnEdit_foo |
+ \ endif |
+ \ endif
+ " Need to postpone using "zv" until after reading the modelines.
+ autocmd BufWinEnter *
+ \ if exists("b:doopenfold") |
+ \ exe "normal zv" |
+ \ if(b:doopenfold > 1) |
+ \ exe "+".1 |
+ \ endif |
+ \ unlet b:doopenfold |
+ \ endif
+augroup END
+
+" Encodings
+"<F7> EOL format (dos <CR><NL>,unix <NL>,mac <CR>)
+                set  wildmenu
+                set  wcm=<Tab>
+                menu EOL.unix :set fileformat=unix<CR>
+                menu EOL.dos  :set fileformat=dos<CR>
+                menu EOL.mac  :set fileformat=mac<CR>
+                menu EOL.my_win2unix :%s /\r\n/\r/g<CR>
+                map  <F7> :emenu EOL.<Tab>
+                map  <F4> [I:let nr = input("Which one: ")<Bar>exe "normal " . nr ."[\t"<CR>
+"<F8> Change encoding
+                set  wildmenu
+                set  wcm=<Tab>
+                menu Enc.cp1251     :e ++enc=cp1251<CR>
+                menu Enc.koi8-r     :e ++enc=koi8-r<CR>
+                menu Enc.cp866      :e ++enc=ibm866<CR>
+                menu Enc.utf-8      :set encoding=utf8<CR>
+                menu Enc.ucs-2le    :e ++enc=ucs-2le<CR>
+                map  <F8> :emenu Enc.<Tab>
+"<F9> Compilation
+                set  wildmenu
+                set  wcm=<Tab>
+                menu Compile.g++        :!g++ % -Wall -pedantic -o %< <CR>
+                menu Compile.gcc        :!gcc % -Wall -pedantic -std=c99 -o %< <CR>
+                map  <F9> :emenu Compile.<Tab>
+"#if has('mouse')
+"    set mouse=a
+"endif
+
+map <C-\> :tab split<CR>:exec("tag ".expand("<cword>"))<CR>
+map <A-]> :vsp <CR>:exec("tag ".expand("<cword>"))<CR>
+map <F10> :!./%<<CR>
+map <F11> :!clear<CR>

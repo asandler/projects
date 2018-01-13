@@ -1,0 +1,11 @@
+<!--- <script src="//tinymce.cachefly.net/4.1/tinymce.min.js"></script>
+<script type="text/javascript"> 
+    tinymce.init({selector:'textarea'});
+</script> -->
+<center>
+<%= form_tag do %>
+    <%= text_area_tag(:text, @page.text, size: "90x40") %>
+    <br>
+    <%= submit_tag("Submit") %>
+<% end %>
+</center>

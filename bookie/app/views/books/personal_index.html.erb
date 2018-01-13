@@ -1,0 +1,29 @@
+<h1>Personal books</h1>
+
+<%= link_to 'Find a book', books_path %>
+<%= link_to 'Upload book', new_book_path %>
+
+<table>
+  <tr>
+    <th>Title</th>
+    <th>Author</th>
+    <th colspan="2"></th>
+    <th colspan="2"></th>
+    <th colspan="2"></th>
+    <th colspan="2"></th>
+  </tr> 
+
+  <% @books.each do |book| %>
+    <tr>
+      <td><%= link_to book.title, book_path(book) %></td>
+      <td><%= book.author %></td>
+      <td><%= link_to 'Edit', edit_book_path(book) %></td>
+      <td><%= link_to 'Read', show_page_path(:book_id => book.id, :page_number => 0) %></td>
+      <td><%= link_to 'Read2', read_book_path(:user_id => current_user, :book_id => book.id) %></td>
+      <td><%= link_to 'Delete', destroy_personal_path(:user_id => current_user, :book_id => book.id),
+          method: :delete,
+          data: { confirm: 'Are you sure?' }
+      %></td>
+    </tr>
+  <% end %>
+</table>

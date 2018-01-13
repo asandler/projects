@@ -1,0 +1,6 @@
+#!/bin/bash
+
+find . -name "*.m4a"\
+    -exec echo "Converting: " {} \; \
+    \( -exec ffmpeg -v 5 -y -i {} -acodec libmp3lame -ac 2 -ab 192k "output.mp3" \; -o -exec true \; \) \
+    -exec sh -c 'mv output.mp3 "${1%.m4a}.mp3"' echo {} \;
