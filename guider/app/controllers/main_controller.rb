@@ -58,7 +58,7 @@ class MainController < ApplicationController
             @min_price -= 2000
             @max_price += 2000
         end
-        
+
         @search_results = @search_results.where('price >= ? AND price <= ?', price_from, price_to) if do_filter_price
 
         @search_results = @search_results.where.overlap(city_tags: city_tags) if city_tags.any?

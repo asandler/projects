@@ -79,7 +79,7 @@ facs.default = 0
 friendship.default = 0
 
 Dir::entries('./graph').each do |filename|
-        if !['.', '..'].include? filename 
+        if !['.', '..'].include? filename
                 vertex = filename.split('-')
                 File.open('./graph/' + filename).readlines.each do |t|
                         f = t.chomp.split('-')
@@ -130,11 +130,11 @@ while queue.any?
                                 graph[[id.to_s, id.to_s]] = true
                         end
                         if !graph[[queue[0].to_s, id.to_s]]
-                                friendship[[fc[0], fac]] += 1 
+                                friendship[[fc[0], fac]] += 1
                                 graph[[queue[0].to_s, id.to_s]] = true
                         end
                         if !graph[[id.to_s, queue[0].to_s]]
-                                friendship[[fac, fc[0]]] += 1 
+                                friendship[[fac, fc[0]]] += 1
                                 graph[[id.to_s, queue[0].to_s]] = true
                         end
                         list << id.to_s + '-' + fac + '-' + name

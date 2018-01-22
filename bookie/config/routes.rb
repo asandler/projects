@@ -16,10 +16,10 @@ Rails.application.routes.draw do
   get 'save_bookmark' => 'books#save_bookmark', as: :save_bookmark
   post 'save_paragraph' => 'books#save_paragraph', as: :save_paragraph
   post 'books/:book_id/edit' => 'books#update', as: :update_book
-  
+
   get 'books/:book_id/pages/:page_number/edit' => 'pages#edit_get', as: :edit_page_get
   post 'books/:book_id/pages/:page_number/edit' => 'pages#edit_post', as: :edit_page_post
-  
+
   get 'my_books' => 'books#personal_index', as: :personal_index
   get 'my_books/add' => 'books#add_to_personal', as: :add_book
   delete 'my_books/:book_id' => 'books#destroy_personal', as: :destroy_personal

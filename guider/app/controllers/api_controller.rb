@@ -28,7 +28,7 @@ class ApiController < ApplicationController
     def route_info
         r = Route.find(params[:id])
         s = r.to_json(:except => [:created_at, :updated_at])
-        render json: s[0..-2] + ",\"images_number\":#{RoutePhoto.where(:route_id => params[:id]).size}}" 
+        render json: s[0..-2] + ",\"images_number\":#{RoutePhoto.where(:route_id => params[:id]).size}}"
     end
 
     def route_image

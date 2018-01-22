@@ -134,7 +134,7 @@ class Map
   def set x, y, symb
     @pool[x][y] = symb
   end
-  
+
   def final?
     @pool.each_with_index do |row, i|
       row.each_with_index do |c, j|

@@ -14,7 +14,7 @@ set smartindent
 set autoindent
 set fileencodings=ucs-bom,utf-8,default,cp1251,latin1
 set makeprg=!./build.sh
-set tags+=tags;/    
+set tags+=tags;/
 set viminfo='10,\"100,:20,%,n~/.viminfo
 
 autocmd FileType python set omnifunc=pythoncomplete#Complete commentstring=#%s# foldmethod=indent | %foldopen! | set softtabstop=4 | set shiftwidth=4
@@ -24,7 +24,6 @@ autocmd FileType css set omnifunc=csscomplete#CompleteCSS
 autocmd FileType php set omnifunc=phpcomplete#CompletePHP
 autocmd FileType javascript set omnifunc=javascriptcomplete#CompleteJS
 autocmd FileType c set omnifunc=ccomplete#Complete
-
 
 " when we reload, tell vim to restore the cursor to the saved position
 augroup JumpCursorOnEdit

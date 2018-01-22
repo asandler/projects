@@ -43,7 +43,7 @@ Rails.application.routes.draw do
   get 'api/user_avatar/:id' => 'api#user_avatar', :as => :api_user_avatar
   get 'api/route_info/:id' => 'api#route_info', :as => :api_route_info
   get 'api/route_image' => 'api#route_image', :as => :api_route_image
- 
+
   post '/' => 'main#find'
   root 'main#find'
 end

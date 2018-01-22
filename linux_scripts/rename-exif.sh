@@ -6,7 +6,7 @@ for i in ./*; do
     if [ -n "$NAME" ]; then
         NAME=${NAME// /-}
         SUFFIX=0
-        
+
         if [ -e "$NAME.jpg" ]; then
             SUFFIX=1
         fi
