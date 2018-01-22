@@ -20,21 +20,17 @@ int main() {
     for (size_t i = 0; i < 1000; ++i) {
         inputs.push_back({0, 0, 0, 0});
         targets.push_back({0});
+
         for (size_t k = 0; k < 4; ++k) {
             inputs[i][k] = distribution(generator);
-            //targets[i][0] += inputs[i][k] * inputs[i][k];
         }
-        //if (targets[i][0] > 3.5) {
-        if (inputs[i][0] > 1) {
-            targets[i][0] = 1;
-        } else {
-            targets[i][0] = 0;
-        }
+
+        targets[i][0] = (inputs[i][0] > 1) ? 1 : 0;
     }
 
     cout << "Start" << endl;
 
-    for (size_t epoch = 0; epoch < 5000; ++epoch) {
+    for (size_t epoch = 0; epoch < 10000; ++epoch) {
         double sum = 0;
         size_t validationLen = 0;
 

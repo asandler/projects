@@ -14,34 +14,34 @@ public:
         : StepSize(0.001)
         , ParentInputIndex(parentInputIndex)
         , IsFirstLayer(isFirstLayer)
-        , externalGradient(0)
+        , ExternalGradient(0)
     {
     }
 
     void Forward() {
-        output = 0;
+        Output = 0;
         for (size_t i = 0; i < Inputs.size(); ++i) {
-            output += Weights[i] * Inputs[i]->GetOutput();
+            Output += Weights[i] * Inputs[i]->GetOutput();
         }
-        output = Sigma(output);
+        Output = Sigma(Output);
     }
 
     void Backward() {
         for (size_t i = 0; i < Inputs.size(); ++i) {
+            Gradients[i] = ExternalGradient;
 
-            Gradients[i] = externalGradient;
             for (size_t j = 0; j < Parents.size(); ++j) {
                 Gradients[i] += Parents[j]->GetGradient(ParentInputIndex);
             }
 
-            Gradients[i] *= output * (1 - output) * Inputs[i]->GetOutput(); //gradient update by chain rule
+            Gradients[i] *= Output * (1 - Output) * Inputs[i]->GetOutput(); //gradient update by chain rule
 
             Weights[i] += StepSize * Gradients[i]; //weights update by gradient descent
         }
     }
 
     double GetOutput() {
-        return output;
+        return Output;
     }
 
     double GetGradient(size_t index) {
@@ -64,12 +64,12 @@ public:
 
     void SetInput(double val) {
         if (IsFirstLayer) {
-            output = val;
+            Output = val;
         }
     }
 
     void SetExternalGradient(double grad) {
-        externalGradient = grad;
+        ExternalGradient = grad;
     }
 
 private:
@@ -77,7 +77,7 @@ private:
         return 1 / (1 + exp(-x));
     }
 
-    double output;
+    double Output;
     double StepSize;
 
     size_t ParentInputIndex;
@@ -85,7 +85,7 @@ private:
 
     vector<double> Weights;
     vector<double> Gradients;
-    double externalGradient;
+    double ExternalGradient;
 
     vector<Neuron*> Inputs;
     vector<Neuron*> Parents;
