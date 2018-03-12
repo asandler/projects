@@ -18,7 +18,8 @@ while read -r LINE; do
     OUTPUT="$PREFIX/$LINE"
 
     if [ ! -s "$OUTPUT" ]; then
-        < /dev/null avconv -v error -i "$LINE" -b 192k "$OUTPUT"
+        #< /dev/null avconv -v error -i "$LINE" -b 192k "$OUTPUT"
+        < /dev/null avconv -v error -i "$LINE" -ab 192k -q:a 0 -ar 44100 -map_metadata 0 -id3v2_version 3 -write_id3v1 1 "$OUTPUT"
         #echo "$OUTPUT"
     fi
 
