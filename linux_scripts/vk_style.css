@@ -27,11 +27,11 @@ body {
 }
 
 #profile_edit_act {
-        display: none !important;
+    display: none !important;
 }
 
 #wide_column > div:nth-child(1) > div.counts_module {
-        display: none !important;
+    display: none !important;
 }
 
 #page_current_info {
@@ -43,7 +43,7 @@ body {
 }
 
 #side_bar_inner {
-    width: 110px;
+width: 110px;
 }
 
 #profile_common_friends {
@@ -51,7 +51,7 @@ body {
 }
 
 #profile_gifts {
-        display: none !important;
+    display: none !important;
 }
 
 #ui_rmenu_unread {
@@ -62,16 +62,16 @@ body {
     display: none !important;
 }
 
-#top_profile_link > img {
+#    top_profile_link > img {
     display: none !important;
 }
 
-#top_profile_link > div.top_profile_name {
+#    top_profile_link > div.    top_profile_name {
     display: none !important;
 }
 
 #im--page > div.im-page--history.page_block._im_page_history > div.im-page-history-w > div.im-page--header-chat._im_dialog_actions {
-    border-top: solid 1px #edeef0;
+    border-    top: solid 1px #edeef0;
 }
 
 #im--page > div.im-page--history.page_block._im_page_history > div.im-page-history-w > div.im-page--chat-input._im_chat_input_w {
@@ -163,7 +163,7 @@ div.im-page--back > a:hover {
 }
 
 .profile_rate_warning {
-        display: none !important;
+    display: none !important;
 }
 
 #profile_albums > div.module_body.clear_fix {
@@ -199,9 +199,13 @@ span.header_label {
 }
 
 a.ui_actions_menu_item.page_action_subscribe.page_actions_item {
-        display: none !important;
+    display: none !important;
 }
 
 .ui_actions_menu_sep {
-        display: none !important;
+    display: none !important;
+}
+
+#profile_photos_module {
+    display: none !important;
 }
