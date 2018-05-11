@@ -209,3 +209,23 @@ a.ui_actions_menu_item.page_action_subscribe.page_actions_item {
 #profile_photos_module {
     display: none !important;
 }
+
+div.like_button.like._like.active > div.like_button_count {
+        color: #67707a;
+}
+
+div.like_btn.like._like.animate.active > div.like_button_count {
+        color: #67707a;
+}
+
+a.like_btn.like._like.animate.active > div.like_button_count {
+        color: #67707a;
+}
+
+a.like_btn.like._like.active > div.like_button_count {
+        color: #67707a;
+}
+
+.like_button_icon {
+        filter: invert(15%) opacity(65%);
+}
