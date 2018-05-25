@@ -62,16 +62,16 @@ width: 110px;
     display: none !important;
 }
 
-#    top_profile_link > img {
+#top_profile_link > img {
     display: none !important;
 }
 
-#    top_profile_link > div.    top_profile_name {
+#top_profile_link > div.top_profile_name {
     display: none !important;
 }
 
 #im--page > div.im-page--history.page_block._im_page_history > div.im-page-history-w > div.im-page--header-chat._im_dialog_actions {
-    border-    top: solid 1px #edeef0;
+    border-top: solid 1px #edeef0;
 }
 
 #im--page > div.im-page--history.page_block._im_page_history > div.im-page-history-w > div.im-page--chat-input._im_chat_input_w {
@@ -211,21 +211,25 @@ a.ui_actions_menu_item.page_action_subscribe.page_actions_item {
 }
 
 div.like_button.like._like.active > div.like_button_count {
-        color: #67707a;
+    color: #67707a;
 }
 
 div.like_btn.like._like.animate.active > div.like_button_count {
-        color: #67707a;
+    color: #67707a;
 }
 
 a.like_btn.like._like.animate.active > div.like_button_count {
-        color: #67707a;
+    color: #67707a;
 }
 
 a.like_btn.like._like.active > div.like_button_count {
-        color: #67707a;
+    color: #67707a;
 }
 
 .like_button_icon {
-        filter: invert(15%) opacity(65%);
+    filter: invert(15%) opacity(65%);
+}
+
+a.ui_actions_menu_item.page_action_subscribe {
+    display: none !important;
 }
