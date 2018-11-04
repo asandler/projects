@@ -11,8 +11,8 @@ using namespace std;
 int main() {
     NeuralNet N({4, 1});
 
-    vector<vector<double> > inputs;
-    vector<vector<double> > targets;
+    vector<vector<double>> inputs;
+    vector<vector<double>> targets;
 
     default_random_engine generator(time(0));
     normal_distribution<double> distribution(1, 1);
