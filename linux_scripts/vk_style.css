@@ -6,6 +6,10 @@ body {
     background: white;
 }
 
+.scroll_fix {
+    background: white;
+}
+
 .left_menu_nav_wrap {
     display: none !important;
 }
@@ -43,7 +47,7 @@ body {
 }
 
 #side_bar_inner {
-width: 110px;
+    width: 110px;
 }
 
 #profile_common_friends {
@@ -231,5 +235,13 @@ a.like_btn.like._like.active > div.like_button_count {
 }
 
 a.ui_actions_menu_item.page_action_subscribe {
+    display: none !important;
+}
+
+.feed_friends_recomm {
+    display: none !important;
+}
+
+.ShortVideoFeedBlock {
     display: none !important;
 }
