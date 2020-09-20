@@ -1,0 +1,22 @@
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script type="text/javascript">
+    function myFunction() {
+    //    alert($(window).height());
+        document.getElementById('Edit').click();
+    };
+</script>
+
+<script type="text/javascript">
+//    window.location.replace("/books/11/pages/12");
+</script>
+
+<center>
+    <% @page.text.split("\n").each do |par| %>
+        <div align="justify" ondblclick="myFunction()">
+            &nbsp;&nbsp;&nbsp;&nbsp;<%= par.squish %>
+        </div>
+    <% end %>
+    <br>
+</center>
+
+<%= render 'footer' %>
