@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+          font-family: 'Courier New', monospace;
+          white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <form action="/docs/<%= @doc.id %>/edit" method="get">
+        <input type="submit" value="Edit"/>
+    </form>
+
+    <div>
+        <b><%= @doc.name %></b>
+    </div>
+    <div>
+        <%= @doc.data %>
+    </div>
+</body>

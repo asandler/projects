@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+          font-family: 'Courier New', monospace;
+          white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <% if @doc %>
+    <form action="/docs/<%= @doc.id %>/save" method="post">
+    <% else %>
+    <form action="/docs/new">
+    <% end %>
+        <input type="text" name="doc_name" value="<%= @doc.name %>"/>
+        <br>
+        <textarea name="doc_data" cols="80" rows="50">
+            <%= @doc.data %>
+        </textarea>
+        <input type="submit"/>
+    </form>
+</body>
