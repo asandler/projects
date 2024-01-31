@@ -13,12 +13,10 @@
     </style>
 </head>
 <body>
-    <a href="/docs/all">Home</a>
-    
-    <div>
-        <form action="/docs/<%= @doc.id %>/edit" method="get">
-            <b class="left"><%= @doc.name %></b> <input type="submit" value="Edit"/>
-        </form>
-    </div>
-    <div><%= @doc.data %></div>
+    <form action="/docs/new">
+        <input type="submit" value="New"/>
+    </form>
+    <% @docs.each do |d| %>
+        <a href="/docs/<%=d.id%>"><%= d.name %></a>
+    <% end %>
 </body>
