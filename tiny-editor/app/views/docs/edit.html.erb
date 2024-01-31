@@ -5,6 +5,7 @@
         body {
           font-family: 'Courier New', monospace;
           white-space: pre;
+          display: grid;
         }
     </style>
 </head>
@@ -14,11 +15,9 @@
     <% else %>
     <form action="/docs/new">
     <% end %>
-        <input type="text" name="doc_name" value="<%= @doc.name %>"/>
+        <input type="text" name="doc_name" value="<%= @doc.name %>" size="77"/>
         <br>
-        <textarea name="doc_data" cols="80" rows="50">
-            <%= @doc.data %>
-        </textarea>
+        <textarea name="doc_data" cols="80" rows="50"><%= @doc.data %></textarea>
         <input type="submit"/>
     </form>
 </body>

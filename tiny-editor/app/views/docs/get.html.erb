@@ -3,20 +3,20 @@
 <head>
     <style>
         body {
-          font-family: 'Courier New', monospace;
-          white-space: pre;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            display: grid;
+        }
+        .left {
+            float: left;
         }
     </style>
 </head>
 <body>
-    <form action="/docs/<%= @doc.id %>/edit" method="get">
-        <input type="submit" value="Edit"/>
-    </form>
-
     <div>
-        <b><%= @doc.name %></b>
+        <form action="/docs/<%= @doc.id %>/edit" method="get">
+            <b class="left"><%= @doc.name %></b> <input type="submit" value="Edit"/>
+        </form>
     </div>
-    <div>
-        <%= @doc.data %>
-    </div>
+    <div><%= @doc.data %></div>
 </body>
