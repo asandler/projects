@@ -1,6 +1,6 @@
 class DocsController < ApplicationController
     def get
-        @doc = get_doc(params[:id])
+        @doc = get_or_not_found(params[:id])
     end
 
     def all
@@ -8,42 +8,37 @@ class DocsController < ApplicationController
     end
 
     def edit
-        @doc = get_doc(params[:id])
+        @doc = get_or_not_found(params[:id])
+    end
+
+    def new
     end
 
     def save
         # validate params later
-        d = get_doc(params[:id])
-        if d
-            d.name = params[:doc_name]
-            d.data = params[:doc_data]
-
-            if d.save
-                redirect_to "/docs/#{params[:id]}"
-                return
-            else
-                internal_error
-                return
-            end
-        end
-
-        redirect_to "/"
-    end
-
-    def new
-        d = Document.new
-        if d.save
-            redirect_to "/docs/#{d.id}/edit"
+        if params[:id]
+            update_doc(Document.find(params[:id]), params[:doc_name], params[:doc_data])
         else
-            internal_error
+            update_doc(Document.new, params[:doc_name], params[:doc_data])
         end
     end
 
-    def get_doc id
+private
+    def get_or_not_found id
         begin
             return Document.find(params[:id])
         rescue
             not_found
+        end
+    end
+
+    def update_doc doc, name, data
+        doc.name = params[:doc_name]
+        doc.data = params[:doc_data]
+        if doc.save
+            redirect_to "/docs/#{doc.id}"
+        else
+            internal_error
         end
     end
 end
