@@ -13,3 +13,30 @@
  *= require_tree .
  *= require_self
  */
+
+body {
+    font-family: 'Courier New', monospace;
+    display: grid;
+}
+
+.left {
+    float: left;
+}
+
+.mono {
+    white-space: pre;
+}
+
+.header {
+    display: inline-flex;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 1.05em;
+    font-family: 'Courier New', monospace;
+}

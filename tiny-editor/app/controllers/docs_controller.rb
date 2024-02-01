@@ -23,6 +23,11 @@ class DocsController < ApplicationController
         end
     end
 
+    def delete
+        Document.delete(params[:id])
+        redirect_to "/"
+    end
+
 private
     def get_or_not_found id
         begin

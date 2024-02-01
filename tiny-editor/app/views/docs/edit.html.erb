@@ -1,24 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {
-          font-family: 'Courier New', monospace;
-          white-space: pre;
-          display: grid;
-        }
-    </style>
-</head>
-<body>
-    <a href="/docs/<%=@doc.id%>">Back</a>
-    <% if @doc %>
-    <form action="/docs/<%= @doc.id %>/save" method="post">
-    <% else %>
-    <form action="/docs/new">
-    <% end %>
-<input type="text" name="doc_name" value="<%= @doc.name %>" size="77"/>
+<div>
+    <form action="/docs/<%= @doc.id %>" method="get"><input type="submit" value="Back" class="link-button"/></form>
+</div>
 <br>
-<textarea name="doc_data" cols="80" rows="45"><%= @doc.data %></textarea>
-<input type="submit"/>
-    </form>
-</body>
+
+<% if @doc %>
+<form action="/docs/<%= @doc.id %>/save" method="post">
+<% else %>
+<form action="/docs/new">
+<% end %>
+
+    <input type="text" name="doc_name" value="<%= @doc.name %>" size="77"/>
+    <br><br>
+
+    <div class="mono"><textarea name="doc_data" cols="80" rows="40"><%= @doc.data %></textarea></div>
+    <input type="submit"/>
+</form>

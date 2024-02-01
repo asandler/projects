@@ -7,4 +7,5 @@ Rails.application.routes.draw do
   get "/docs/:id", to: "docs#get"
   get "/docs/:id/edit", to: "docs#edit"
   post "/docs/:id/save", to: "docs#save"
+  post "/docs/:id/delete", to: "docs#delete"
 end
