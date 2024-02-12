@@ -12,6 +12,7 @@ enum ActivationType {
     ACTIVATION_NONE,
     ACTIVATION_SIGMA,
     ACTIVATION_RELU,
+    ACTIVATION_SOFTMAX,
 };
 
 class Neuron {
@@ -32,10 +33,19 @@ public:
 
     void Forward() {
         Output = 0;
-        for (size_t i = 0; i < Inputs.size(); ++i) {
-            Output += Weights[i] * Inputs[i]->GetOutput();
+
+        if (activationType == ACTIVATION_SOFTMAX) {
+            for (size_t i = 0; i < Inputs.size(); ++i) {
+                Output += exp(Inputs[i]->GetOutput());
+            }
+            Output = exp(Inputs[parentInputIndex]->GetOutput()) / Output;
+
+        } else {
+            for (size_t i = 0; i < Inputs.size(); ++i) {
+                Output += Weights[i] * Inputs[i]->GetOutput();
+            }
+            Output = activation(Output);
         }
-        Output = activation(Output);
     }
 
     void Backward() {
@@ -101,6 +111,8 @@ private:
                 } else {
                     return 0;
                 }
+            case ACTIVATION_SOFTMAX:
+                return x;
             default:
                 return x;
         }
@@ -118,6 +130,8 @@ private:
                 } else {
                     return 0;
                 }
+            case ACTIVATION_SOFTMAX:
+                return x * (1 - x);
             default:
                 return 1;
         }
@@ -139,23 +153,19 @@ private:
     vector<Neuron*> Parents;
 };
 
+struct LayerSpec {
+    size_t Size;
+    ActivationType Activation;
+};
+
 class NeuralNet {
 public:
-    /*
-        Construction of a fully connected multi-layer neural network.
-        layersSizes - array with layers sizes,
-        layersSizes[0] - size of input layer,
-        layersSizes[1] - size of 1st hidden layer,
-        layersSizes[2] - size of 2nd hidden layer,
-        ...
-        layersSizes[last] - size of output layer
-    */
-    NeuralNet(vector<size_t> layersSizes, double learningRate, ActivationType activationType)
-        : layersSizes(layersSizes)
+    NeuralNet(vector<LayerSpec> layers, double learningRate)
+        : layers(layers)
     {
         // first add the input layer
-        for (size_t i = 0; i < layersSizes[0]; ++i) {
-            neurons.push_back(new Neuron(i, learningRate, true, activationType));
+        for (size_t i = 0; i < layers[0].Size; ++i) {
+            neurons.push_back(new Neuron(i, learningRate, true, layers[0].Activation));
         }
 
         default_random_engine generator(time(0));
@@ -164,15 +174,13 @@ public:
         size_t previousLayerStartIndex = 0;
 
         // adding hidden layers and output layer
-        for (size_t layerIdx = 1; layerIdx < layersSizes.size(); ++layerIdx) {
-
-            // adding layersSizes[layerIdx] neurons to the current layer
-            for (size_t j = 0; j < layersSizes[layerIdx]; ++j) {
-                Neuron* n = new Neuron(j, learningRate, false, activationType);
+        for (size_t layerIdx = 1; layerIdx < layers.size(); ++layerIdx) {
+            for (size_t j = 0; j < layers[layerIdx].Size; ++j) {
+                Neuron* n = new Neuron(j, learningRate, false, layers[layerIdx].Activation);
                 neurons.push_back(n);
 
                 // add previous layer neurons as inputs to the current neuron
-                for (size_t k = 0; k < layersSizes[layerIdx - 1]; ++k) {
+                for (size_t k = 0; k < layers[layerIdx - 1].Size; ++k) {
                     Neuron* prev = neurons[previousLayerStartIndex + k];
 
                     n->AddInput(prev, distribution(generator));
@@ -180,7 +188,7 @@ public:
                 }
             }
 
-            previousLayerStartIndex += layersSizes[layerIdx - 1];
+            previousLayerStartIndex += layers[layerIdx - 1].Size;
         }
     }
 
@@ -193,15 +201,15 @@ public:
     vector<double> ForwardPass(const vector<double>& inputs) {
         vector<double> result;
 
-        for (size_t i = 0; i < layersSizes[0]; ++i) {
+        for (size_t i = 0; i < layers[0].Size; ++i) {
             neurons[i]->SetInput(inputs[i]);
         }
 
-        for (size_t i = layersSizes[0]; i < neurons.size(); ++i) {
+        for (size_t i = layers[0].Size; i < neurons.size(); ++i) {
             neurons[i]->Forward();
         }
 
-        size_t outputLayerStartIndex = neurons.size() - layersSizes.back();
+        size_t outputLayerStartIndex = neurons.size() - layers.back().Size;
 
         for (size_t i = outputLayerStartIndex; i < neurons.size(); ++i) {
             result.push_back(neurons[i]->GetOutput());
@@ -211,52 +219,52 @@ public:
     }
 
     void DumpWeights() {
-        size_t neuronsArrayStartIndex = layersSizes[0];
+        size_t neuronsArrayStartIndex = layers[0].Size;
 
         cerr << "layer\tneuron\tinput\tweight" << endl;
 
-        for (size_t i = 1; i < layersSizes.size(); ++i) {
-            for (size_t j = 0; j < layersSizes[i]; ++j) {
+        for (size_t i = 1; i < layers.size(); ++i) {
+            for (size_t j = 0; j < layers[i].Size; ++j) {
                 vector<double>& w = neurons[neuronsArrayStartIndex + j]->GetWeights();
                 for (size_t k = 0; k < w.size(); ++k) {
                     cerr << i << "\t" << j << "\t" << k << "\t" << w[k] << endl;
                 }
             }
-            neuronsArrayStartIndex += layersSizes[i];
+            neuronsArrayStartIndex += layers[i].Size;
         }
     }
 
     vector<double> GetWeights() {
         vector<double> result;
 
-        size_t neuronsArrayStartIndex = layersSizes[0];
+        size_t neuronsArrayStartIndex = layers[0].Size;
 
-        for (size_t i = 1; i < layersSizes.size(); ++i) {
-            for (size_t j = 0; j < layersSizes[i]; ++j) {
+        for (size_t i = 1; i < layers.size(); ++i) {
+            for (size_t j = 0; j < layers[i].Size; ++j) {
                 vector<double>& w = neurons[neuronsArrayStartIndex + j]->GetWeights();
                 for (size_t k = 0; k < w.size(); ++k) {
                     result.push_back(w[k]);
                 }
             }
-            neuronsArrayStartIndex += layersSizes[i];
+            neuronsArrayStartIndex += layers[i].Size;
         }
 
         return result;
     }
 
     void BackPropagation(const vector<double>& outputs, const vector<double>& targets) {
-        size_t outputLayerStartIndex = neurons.size() - layersSizes.back();
+        size_t outputLayerStartIndex = neurons.size() - layers.back().Size;
 
         for (size_t i = 0; i < targets.size(); ++i) {
             neurons[outputLayerStartIndex + i]->SetExternalGradient(targets[i] - outputs[i]);
         }
 
-        for (size_t i = neurons.size() - 1; i >= layersSizes[0]; --i) {
+        for (size_t i = neurons.size() - 1; i >= layers[0].Size; --i) {
             neurons[i]->Backward();
         }
     }
 
 private:
-    vector<size_t> layersSizes;
+    vector<LayerSpec> layers;
     vector<Neuron*> neurons;
 };

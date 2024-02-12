@@ -82,7 +82,12 @@ void printDbgInfo(
 }
 
 int main() {
-    NeuralNet N({2, 4, 4, 3}, /* learningRate = */ 0.05, ACTIVATION_SIGMA);
+    NeuralNet N({
+        {2, ACTIVATION_SIGMA},
+        {4, ACTIVATION_SIGMA},
+        {3, ACTIVATION_SIGMA},
+        {3, ACTIVATION_SOFTMAX},
+    }, /* learningRate = */ 0.05);
 
     vector<vector<double>> inputs;
     vector<vector<double>> targets;
