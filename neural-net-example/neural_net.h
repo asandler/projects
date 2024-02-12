@@ -213,13 +213,13 @@ public:
     void DumpWeights() {
         size_t neuronsArrayStartIndex = layersSizes[0];
 
-        cout << "layer\tneuron\tinput\tweight" << endl;
+        cerr << "layer\tneuron\tinput\tweight" << endl;
 
         for (size_t i = 1; i < layersSizes.size(); ++i) {
             for (size_t j = 0; j < layersSizes[i]; ++j) {
                 vector<double>& w = neurons[neuronsArrayStartIndex + j]->GetWeights();
                 for (size_t k = 0; k < w.size(); ++k) {
-                    cout << i << "\t" << j << "\t" << k << "\t" << w[k] << endl;
+                    cerr << i << "\t" << j << "\t" << k << "\t" << w[k] << endl;
                 }
             }
             neuronsArrayStartIndex += layersSizes[i];
