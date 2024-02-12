@@ -1,0 +1,14 @@
+set termopt enhanced
+set terminal gif animate nooptimize delay 10 size 500,500
+set output 'test2.gif'
+set xrange [-4:4]
+set yrange [-4:4]
+set zrange [0:1]
+set cbrange [0:1]
+
+do for [i=0:199] {
+    start = i * 1000
+    end = (i + 1) * 1000
+    set title sprintf("run %f", i)
+    plot 'look' every ::start::end using 1:2:3 notitle with points pt 7 palette
+}
