@@ -55,11 +55,16 @@ public:
         double gradient = ExternalGradient;                        // non-zero only for output layer
         for (size_t j = 0; j < Parents.size(); ++j) {
             gradient += Parents[j]->GetGradient(parentInputIndex); // non-zero only for inner layers
+            //cerr << "j = " << j << ", gradient = " << gradient << endl;
         }
 
         for (size_t i = 0; i < Inputs.size(); ++i) {
             // update gradient by chain rule
+            //cerr << parentInputIndex << ": Backward(): gradient = " << gradient << ", deriv = " << activationDerivative(Output) << ", Inputs[i] = " << Inputs[i]->GetOutput() << endl;
+
             Gradients[i] = gradient * activationDerivative(Output) * Inputs[i]->GetOutput();
+
+            //cerr << parentInputIndex << ": Grad[i] = " << Gradients[i] << ", update = " << learningRate * Gradients[i] << endl;
 
             // update weights by gradient descent
             Weights[i] += learningRate * Gradients[i];
@@ -256,7 +261,12 @@ public:
         size_t outputLayerStartIndex = neurons.size() - layers.back().Size;
 
         for (size_t i = 0; i < targets.size(); ++i) {
-            neurons[outputLayerStartIndex + i]->SetExternalGradient(targets[i] - outputs[i]);
+            //cerr << "SetExternalGradient: " << targets[i] - outputs[i] << endl;
+            if (targets[i] - outputs[i] > 0) {
+                neurons[outputLayerStartIndex + i]->SetExternalGradient(1);
+            } else {
+                neurons[outputLayerStartIndex + i]->SetExternalGradient(-1);
+            }
         }
 
         for (size_t i = neurons.size() - 1; i >= layers[0].Size; --i) {

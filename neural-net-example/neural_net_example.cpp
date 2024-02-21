@@ -22,6 +22,14 @@ vector<double> targetFn2(const vector<double>& inputs) {
     }
 }
 
+vector<double> targetFn3(const vector<double>& inputs) {
+    if (inputs[0] < inputs[1]) {
+        return {1, 0};
+    } else {
+        return {0, 1};
+    }
+}
+
 double sqr(double x) {
     return x * x;
 }
@@ -85,9 +93,9 @@ int main() {
     NeuralNet N({
         {2, ACTIVATION_SIGMA},
         {4, ACTIVATION_SIGMA},
-        {3, ACTIVATION_SIGMA},
+        {4, ACTIVATION_SIGMA},
         {3, ACTIVATION_SOFTMAX},
-    }, /* learningRate = */ 0.05);
+    }, /* learningRate = */ 0.1);
 
     vector<vector<double>> inputs;
     vector<vector<double>> targets;
@@ -133,13 +141,14 @@ int main() {
                 N.BackPropagation(output, targets[i]);
 
                 if (printDbg) {
-                    vector<double> w2 = N.GetWeights();
-                    cerr << "Weight diff: " << sqrt(sqrDistance(w1, w2)) << endl;
+                    auto w2 = N.GetWeights();
+                    auto output2 = N.ForwardPass(inputs[i]);
 
-                    output = N.ForwardPass(inputs[i]);
+                    cerr << "Weight diff: " << sqrt(sqrDistance(w1, w2)) << endl;
+                    cerr << "Output diff: " << sqrt(sqrDistance(output, output2)) << endl;
 
                     cerr << "after backprop" << endl;
-                    printDbgInfo(inputs[i], output, targets[i]);
+                    printDbgInfo(inputs[i], output2, targets[i]);
                 }
             } else {
                 if (printDbg) {
