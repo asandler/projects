@@ -1,4 +1,7 @@
 class DocsController < ApplicationController
+    before_action :require_login
+    skip_before_action :require_login, only: [:get], :raise => false
+
     def get
         @doc = get_or_not_found(params[:id])
     end
@@ -25,7 +28,7 @@ class DocsController < ApplicationController
 
     def delete
         Document.delete(params[:id])
-        redirect_to "/"
+        redirect_to docs_path_url
     end
 
 private
