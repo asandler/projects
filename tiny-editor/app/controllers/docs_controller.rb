@@ -6,10 +6,6 @@ class DocsController < ApplicationController
         @doc = get_or_not_found(params[:id])
     end
 
-    def all
-        @docs = Document.all.select("id", "name")
-    end
-
     def edit
         @doc = get_or_not_found(params[:id])
     end
@@ -28,13 +24,13 @@ class DocsController < ApplicationController
 
     def delete
         Document.delete(params[:id])
-        redirect_to docs_path_url
+        redirect_to home_path_url
     end
 
 private
     def get_or_not_found id
         begin
-            return Document.find(params[:id])
+            return Document.find(id)
         rescue
             not_found
         end

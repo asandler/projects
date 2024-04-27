@@ -4,6 +4,8 @@ class CreateDocuments < ActiveRecord::Migration[7.0]
       t.string :name
       t.text   :data
 
+      t.belongs_to :user, index: true, foreign_key: true
+      t.belongs_to :folder, index: true, foreign_key: true
       t.timestamps
     end
   end

@@ -1,0 +1,46 @@
+<div class="header">
+    <div>
+        <form action="/home" method="get"><input type="submit" value="Home" class="link-button"/></form>
+    </div>
+    &nbsp;
+    <div>
+        <form action="/docs/new">
+            <input type="submit" value="New document" class="link-button"/>
+        </form>
+    </div>
+    &nbsp;
+    <div>
+        <form action="/folders/new">
+            <input type="submit" value="New folder" class="link-button"/>
+        </form>
+    </div>
+    <% if @folder.parent_folder_id %>
+        &nbsp;
+        <div>
+            <form action="/folders/<%= @folder.id %>/edit" method="get">
+                <input type="submit" value="Edit" class="link-button"/>
+            </form>
+        </div>
+        &nbsp;
+        <div>
+            <form method="post" action="/folders/<%= @folder.id %>/delete" onclick="return confirm('Are you sure?')">
+                <input type="submit" class="link-button" value="Delete"/>
+            </form>
+        </div>
+    <% end %>
+</div>
+<br>
+
+<div class="folder-header"><b><%= @folder.name %></b></div>
+
+<ul>
+<% if @parent_folder %>
+    <li> <a href="/folders/<%=@parent_folder.id%>">../</a>
+<% end %>
+<% @child_folders.each do |f| %>
+    <li> <a href="/folders/<%=f.id%>"><%= f.name %>/</a>
+<% end %>
+<% @docs.each do |d| %>
+    <li> <a href="/docs/<%=d.id%>"><%= d.name %></a>
+<% end %>
+</ul>

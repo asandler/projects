@@ -1,7 +1,9 @@
 Rails.application.routes.draw do
   root "user_sessions#new"
 
-  get "/docs/all", to: "docs#all", :as => :docs_path
+  get "/home", to: "folders#home", :as => :home_path
+  get "/folders/:id", to: "folders#get"
+
   get "/docs/new", to: "docs#new"
   post "/docs/save", to: "docs#save"
 
@@ -13,6 +15,6 @@ Rails.application.routes.draw do
   resources :user_sessions
   resources :users
 
-  #get 'login' => 'user_sessions#new', :as => :login
-  #post 'logout' => 'user_sessions#destroy', :as => :logout
+  get 'login' => 'user_sessions#new', :as => :login
+  get 'logout' => 'user_sessions#destroy', :as => :logout
 end
