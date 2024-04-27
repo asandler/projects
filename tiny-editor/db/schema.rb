@@ -27,7 +27,9 @@ ActiveRecord::Schema[7.0].define(version: 2024_04_18_172757) do
     t.string "name"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "user_id"
     t.index ["parent_folder_id"], name: "index_folders_on_parent_folder_id"
+    t.index ["user_id"], name: "index_folders_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|

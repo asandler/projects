@@ -5,6 +5,8 @@ class CreateFolders < ActiveRecord::Migration[7.0]
       t.string :name
 
       t.timestamps
+
+      t.references :user
     end
   end
 end

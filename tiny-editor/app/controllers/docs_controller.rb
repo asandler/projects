@@ -17,7 +17,7 @@ class DocsController < ApplicationController
     def save
         # validate params later
         if params[:id]
-            update_doc(Document.find(params[:id]), params[:doc_name], params[:doc_data])
+            update_doc(get_or_not_found(params[:id]), params[:doc_name], params[:doc_data])
         else
             update_doc(new_doc(params), params[:doc_name], params[:doc_data])
         end
@@ -30,11 +30,7 @@ class DocsController < ApplicationController
 
 private
     def get_or_not_found id
-        begin
-            return Document.find(id)
-        rescue
-            not_found
-        end
+        d = Document.find_by(id: id, user_id: current_user.id) or not_found
     end
 
     def new_doc params

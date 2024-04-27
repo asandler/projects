@@ -20,7 +20,7 @@ class FoldersController < ApplicationController
     def save
         # validate params later
         if params[:id]
-            update_folder(Folder.find(params[:id]), params[:name])
+            update_folder(get_or_not_found(params[:id]), params[:name])
         else
             update_folder(new_folder(params), params[:name])
         end
@@ -43,17 +43,13 @@ private
     end
 
     def get_or_not_found id
-        begin
-            return Folder.find(id)
-        rescue
-            not_found
-        end
+        Folder.find_by(id: id, user_id: current_user.id) or not_found
     end
 
     def new_folder params
         return Folder.new(
             parent_folder_id: params[:parent_folder_id].to_i,
-            #user_id: current_user.id,
+            user_id: current_user.id,
         )
     end
 

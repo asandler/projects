@@ -1,9 +1,9 @@
 class ApplicationController < ActionController::Base
     def not_found
-        render :file => "#{Rails.root}/public/404.html", layout: false, status: :not_found
+        raise ActionController::RoutingError.new('Not Found')
     end
 
     def internal_error
-        render :file => "#{Rails.root}/public/500.html", layout: false, status: :internal_error
+        raise "Internal error"
     end
 end
