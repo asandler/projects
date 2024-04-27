@@ -10,7 +10,7 @@
     </div>
     &nbsp;
     <div>
-        <form method="post" action="/docs/<%= @doc.id %>/delete" onclick="return confirm('Are you sure?')">
+        <form method="post" action="/docs/<%= @doc.id %>/destroy" onclick="return confirm('Are you sure?')">
             <input type="submit" class="link-button" value="Delete"/>
         </form>
     </div>

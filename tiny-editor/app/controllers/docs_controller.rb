@@ -11,6 +11,7 @@ class DocsController < ApplicationController
     end
 
     def new
+        @folder_id = params[:folder_id]
     end
 
     def save
@@ -18,12 +19,12 @@ class DocsController < ApplicationController
         if params[:id]
             update_doc(Document.find(params[:id]), params[:doc_name], params[:doc_data])
         else
-            update_doc(Document.new, params[:doc_name], params[:doc_data])
+            update_doc(new_doc(params), params[:doc_name], params[:doc_data])
         end
     end
 
-    def delete
-        Document.delete(params[:id])
+    def destroy
+        Document.destroy(params[:id])
         redirect_to home_path_url
     end
 
@@ -36,9 +37,16 @@ private
         end
     end
 
+    def new_doc params
+        return Document.new(
+            folder_id: params[:folder_id].to_i,
+            user_id: current_user.id,
+        )
+    end
+
     def update_doc doc, name, data
-        doc.name = params[:doc_name]
-        doc.data = params[:doc_data]
+        doc.name = name
+        doc.data = data
         if doc.save
             redirect_to "/docs/#{doc.id}"
         else

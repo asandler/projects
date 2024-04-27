@@ -1,0 +1,10 @@
+<div>
+    <form action="/folders/<%= @folder.id %>" method="get"><input type="submit" value="Back" class="link-button"/></form>
+</div>
+<br>
+
+<form action="/folders/<%= @folder.id %>/save" method="post">
+    <input type="text" name="name" value="<%= @folder.name %>" size="77"/>
+    <input type="hidden" name="parent_folder_id" value="<%= @folder.parent_folder_id %>">
+    <input type="submit"/>
+</form>
