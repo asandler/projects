@@ -6,7 +6,8 @@ class FoldersController < ApplicationController
     end
 
     def edit
-        @folder = get_or_not_found(params[:id])
+        @folder = get_by_id_user_id(params[:id])
+        @all_folders = Folder.where(user_id: current_user.id)
     end
 
     def home
@@ -20,9 +21,9 @@ class FoldersController < ApplicationController
     def save
         # validate params later
         if params[:id]
-            update_folder(get_or_not_found(params[:id]), params[:name])
+            update_folder(get_by_id_user_id(params[:id]), params)
         else
-            update_folder(new_folder(params), params[:name])
+            update_folder(new_folder(params), params)
         end
     end
 
@@ -33,7 +34,7 @@ class FoldersController < ApplicationController
 
 private
     def get_folder_contents id
-        @folder = get_or_not_found(id)
+        @folder = Folder.find(id) or not_found
         @child_folders = Folder.where(parent_folder_id: id)
         @docs = Document.where(folder_id: id)
 
@@ -42,7 +43,7 @@ private
         end
     end
 
-    def get_or_not_found id
+    def get_by_id_user_id id
         Folder.find_by(id: id, user_id: current_user.id) or not_found
     end
 
@@ -53,8 +54,9 @@ private
         )
     end
 
-    def update_folder folder, name
-        folder.name = name
+    def update_folder folder, params
+        folder.name = params[:name]
+        folder.parent_folder_id = params[:parent_folder_id]
         if folder.save
             redirect_to "/folders/#{folder.id}"
         else

@@ -3,11 +3,11 @@ class DocsController < ApplicationController
     skip_before_action :require_login, only: [:get], :raise => false
 
     def get
-        @doc = get_or_not_found(params[:id])
+        @doc = Document.find(params[:id]) or not_found
     end
 
     def edit
-        @doc = get_or_not_found(params[:id])
+        @doc = get_by_id_user_id(params[:id])
     end
 
     def new
@@ -17,7 +17,7 @@ class DocsController < ApplicationController
     def save
         # validate params later
         if params[:id]
-            update_doc(get_or_not_found(params[:id]), params[:doc_name], params[:doc_data])
+            update_doc(get_by_id_user_id(params[:id]), params[:doc_name], params[:doc_data])
         else
             update_doc(new_doc(params), params[:doc_name], params[:doc_data])
         end
@@ -29,8 +29,8 @@ class DocsController < ApplicationController
     end
 
 private
-    def get_or_not_found id
-        d = Document.find_by(id: id, user_id: current_user.id) or not_found
+    def get_by_id_user_id id
+        Document.find_by(id: id, user_id: current_user.id) or not_found
     end
 
     def new_doc params

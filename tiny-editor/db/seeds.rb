@@ -1,55 +1,50 @@
 # This file should contain all the record creation needed to seed the database with its default values.
 # The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
 
-user = User.create!([
-    {
-        :email => "test",
-        :password => "123123",
-    },
-])[0]
+$words = File.open("db/words", "r").readlines.map{|s| s.split}.flatten
 
-root_dir = Folder.create!([{
-    :name => "Root folder",
-    :user_id => user.id,
-}])[0]
-
-user.root_directory_id = root_dir.id
-user.save!(validate: false)
-
-5.times do |i|
-    c = Folder.create!([{
-        :name => "Child dir ##{i}",
-        :parent_folder_id => root_dir.id,
-        :user_id => user.id,
+def create_folder user_id, parent_folder_id, name
+    Folder.create!([{
+        :name => name || $words.shuffle[0..2].join(" "),
+        :parent_folder_id => parent_folder_id,
+        :user_id => user_id,
     }])[0]
-
-    Document.create!([
-        {
-            :name => "Doc inside 1",
-            :data => "Lorem ipsum",
-            :folder_id => c.id,
-            :user_id => user.id,
-        },
-        {
-            :name => "Doc inside 2",
-            :data => "Timeo danaos et donna ferentes",
-            :folder_id => c.id,
-            :user_id => user.id,
-        },
-    ])
 end
 
-Document.create!([
-    {
-        :name => "Root doc 1",
-        :data => "Lorem Ipsum - это текст-\"рыба\", часто используемый в печати и вэб-дизайне. Lorem Ipsum является стандартной \"рыбой\" для текстов на латинице с начала XVI века. В то время некий безымянный печатник создал большую коллекцию размеров и форм шрифтов, используя Lorem Ipsum для распечатки образцов. Lorem Ipsum не только успешно пережил без заметных изменений пять веков, но и перешагнул в электронный дизайн. Его популяризации в новое время послужили публикация листов Letraset с образцами Lorem Ipsum в 60-х годах и, в более недавнее время, программы электронной вёрстки типа Aldus PageMaker, в шаблонах которых используется Lorem Ipsum.",
-        :folder_id => root_dir.id,
-        :user_id => user.id,
-    },
-    {
-        :name => "Root doc 2",
-        :data => "Давно выяснено, что при оценке дизайна и композиции читаемый текст мешает сосредоточиться. Lorem Ipsum используют потому, что тот обеспечивает более или менее стандартное заполнение шаблона, а также реальное распределение букв и пробелов в абзацах, которое не получается при простой дубликации \"Здесь ваш текст.. Здесь ваш текст.. Здесь ваш текст..\" Многие программы электронной вёрстки и редакторы HTML используют Lorem Ipsum в качестве текста по умолчанию, так что поиск по ключевым словам \"lorem ipsum\" сразу показывает, как много веб-страниц всё ещё дожидаются своего настоящего рождения. За прошедшие годы текст Lorem Ipsum получил много версий. Некоторые версии появились по ошибке, некоторые - намеренно (например, юмористические варианты).",
-        :folder_id => root_dir.id,
-        :user_id => user.id,
-    },
-])
+def create_doc user_id, folder_id, name
+    Document.create!([{
+        :name => name || $words.shuffle[0..2].join(" "),
+        :data => 15.times.map{ $words.shuffle[0..15].join(" ") }.join("\n"),
+        :user_id => user_id,
+        :folder_id => folder_id,
+    }])[0]
+end
+
+def init_user username
+    u = User.create!([
+        {
+            :email => username,
+            :password => "123123",
+        },
+    ])[0]
+
+    root_dir = Folder.create!([{
+        :name => "Root folder",
+        :user_id => u.id,
+    }])[0]
+
+    u.root_directory_id = root_dir.id
+    u.save!(validate: false)
+
+    5.times do |i|
+        c = create_folder(u.id, root_dir.id, "Child dir ##{i}")
+        create_doc(u.id, c.id, nil)
+        create_doc(u.id, c.id, nil)
+    end
+
+    create_doc(u.id, root_dir.id, "Root doc 1")
+    create_doc(u.id, root_dir.id, "Root doc 2")
+end
+
+init_user("user_1")
+init_user("user_2")

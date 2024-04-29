@@ -4,7 +4,15 @@
 <br>
 
 <form action="/folders/<%= @folder.id %>/save" method="post">
-    <input type="text" name="name" value="<%= @folder.name %>" size="77"/>
-    <input type="hidden" name="parent_folder_id" value="<%= @folder.parent_folder_id %>">
+    Name: <input type="text" name="name" value="<%= @folder.name %>" size="77"/>
+    <br><br>
+    Parent folder: <select name="parent_folder_id">
+    <% @all_folders.each do |f| %>
+        <% if f.id != @folder.id %>
+            <option value="<%= f.id %>" <%= "selected" if f.id == @folder.parent_folder_id %>> <%= f.name %> </option>
+        <% end %>
+    <% end %>
+    </select>
+    <br><br>
     <input type="submit"/>
 </form>
