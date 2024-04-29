@@ -6,4 +6,8 @@ class ApplicationController < ActionController::Base
     def internal_error
         raise "Internal error"
     end
+
+    def bad_request
+        render :nothing => true, :status => 400
+    end
 end

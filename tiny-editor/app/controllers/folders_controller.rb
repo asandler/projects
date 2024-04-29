@@ -1,5 +1,6 @@
 class FoldersController < ApplicationController
     before_action :require_login
+    skip_before_action :require_login, only: [:get], :raise => false
 
     def get
         get_folder_contents(params[:id])
@@ -19,7 +20,8 @@ class FoldersController < ApplicationController
     end
 
     def save
-        # validate params later
+        # validate(params)
+
         if params[:id]
             update_folder(get_by_id_user_id(params[:id]), params)
         else
