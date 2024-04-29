@@ -78,8 +78,6 @@ GEM
     base64 (0.2.0)
     bcrypt (3.1.20)
     bigdecimal (3.1.7)
-    bootsnap (1.18.3)
-      msgpack (~> 1.2)
     builder (3.2.4)
     concurrent-ruby (1.2.3)
     connection_pool (2.4.1)
@@ -104,9 +102,6 @@ GEM
     irb (1.12.0)
       rdoc
       reline (>= 0.4.2)
-    jbuilder (2.12.0)
-      actionview (>= 5.0.0)
-      activesupport (>= 5.0.0)
     jwt (2.8.1)
       base64
     kaminari (1.2.2)
@@ -132,7 +127,6 @@ GEM
     marcel (1.0.4)
     mini_mime (1.1.5)
     minitest (5.22.3)
-    msgpack (1.7.2)
     multi_xml (0.6.0)
     mutex_m (0.2.0)
     net-http (0.4.1)
@@ -260,9 +254,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
-  bootsnap
   importmap-rails
-  jbuilder
   puma
   rails
   rails_db (>= 2.3.1)
