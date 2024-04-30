@@ -1,7 +1,0 @@
-<form action="/docs/new">
-    <input type="submit" value="New"/>
-</form>
-<br>
-<% @docs.each do |d| %>
-    <a href="/docs/<%=d.id%>"><%= d.name %></a>
-<% end %>
