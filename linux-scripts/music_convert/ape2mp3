@@ -1,8 +1,0 @@
-#!/bin/bash
-
-for i in *.ape; do
-        mplayer "$i" -ao pcm -vc dummy -vo null -really-quiet
-        lame audiodump.wav
-        mv audiodump.wav.mp3 "`echo "$i" | cut -d . -f1`.mp3"
-        rm audiodump.wav
-done
