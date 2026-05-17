@@ -3,271 +3,499 @@
 
 require 'fileutils'
 require 'find'
+require 'optparse'
 
-def FileTail (file, offset)
-    begin
-        f = File.new(file)
-        f.seek(-offset, IO::SEEK_END)
-        f.read
-    rescue Errno::EISDIR
-        ""
+module MPTree
+  MODES = %w[parse recursive_parse list mix clear].freeze
+  TEXT_FRAMES = %w[TIT2 TPE1 TPE2 TRCK TALB TYER TDRC].freeze
+  EMPTY_TAG = {
+    'title' => '',
+    'artist' => '',
+    'album' => '',
+    'year' => '',
+    'track' => ''
+  }.freeze
+
+  Options = Struct.new(:debug, :dry_run, :force, :default_choice)
+
+  module_function
+
+  def default_options
+    Options.new(false, false, false, nil)
+  end
+
+  def blank?(value)
+    value.nil? || value.to_s.strip.empty?
+  end
+
+  def clean_text(value)
+    value.to_s
+         .encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+         .tr("\u0000", ' ')
+         .gsub(/\s+/, ' ')
+         .strip
+  end
+
+  def safe_segment(value)
+    segment = clean_text(value).tr('/', '_').gsub(/[[:cntrl:]]/, '').strip
+    return nil if segment.empty? || segment == '.' || segment == '..'
+
+    segment
+  end
+
+  def warn_user(message)
+    $stderr.puts(message)
+  end
+
+  def debug(message, options)
+    $stderr.puts(message) if options.debug
+  end
+
+  def file_tail(file, offset)
+    File.open(file, 'rb') do |f|
+      return '' if f.size < offset
+
+      f.seek(-offset, IO::SEEK_END)
+      f.read(offset) || ''
     end
-end
+  rescue Errno::EISDIR, Errno::ENOENT, Errno::EACCES, IOError => e
+    warn_user("#{file}: #{e.message}")
+    ''
+  end
 
-def ar2str a
-    result = ""
-    a.each do |i|
-        result += i.chr if (32..127).include?(i)
-        result += (i + 848).chr(Encoding::UTF_8) if (129..255).include?(i)
-    end
-    result.gsub!(/[^' '-~а-яА-Я&!]/, '')
-    result.strip
-end
+  def decode_binary(raw, encoding)
+    raw.to_s.dup.force_encoding(encoding).encode('UTF-8', invalid: :replace, undef: :replace, replace: '')
+  rescue Encoding::InvalidByteSequenceError, Encoding::UndefinedConversionError
+    nil
+  end
 
-def ID3v1 file, is_debug
-    answer = {"title" => "", "artist" => "", "album" => "", "year" => "", "track" => ""}
+  def decode_id3v1_text(raw)
+    bytes = raw.to_s.delete("\x00".b)
+    decoded = %w[UTF-8 Windows-1251 ISO-8859-1].map { |encoding| decode_binary(bytes, encoding) }.compact
+    clean_text(decoded.find { |value| !value.include?("\uFFFD") } || decoded.first || '')
+  end
 
-    (124..130).each do |size|
-        a = FileTail(file, size).unpack "A3C90A4A28C3" #[tag, title, artist, album, year, comment, genre]
+  def parse_id3v1(file, options = default_options)
+    raw = file_tail(file, 128)
+    return EMPTY_TAG.dup if raw.bytesize < 128 || raw.byteslice(0, 3) != 'TAG'
 
-        if a[0] == "TAG"
-            title = ar2str a[1..30]
-            artist = ar2str a[31..60]
-            album = ar2str a[61..90]
+    _tag, title, artist, album, year, comment, _genre = raw.unpack('a3a30a30a30a4a30C')
+    track_byte = comment.bytes[28] == 0 ? comment.bytes[29] : nil
+    track = track_byte && track_byte > 0 ? normalize_track(track_byte.to_s) : ''
 
-            a = a[0..0] + a[91..-1]
+    answer = {
+      'title' => decode_id3v1_text(title),
+      'artist' => decode_id3v1_text(artist),
+      'album' => decode_id3v1_text(album),
+      'year' => decode_id3v1_text(year),
+      'track' => track.to_s
+    }
 
-            year = a[1].to_s
-            track = a[-2].to_s
-            track = '0' + track if track.length == 1
+    debug("#{file}: ID3v1 #{answer}", options)
+    answer
+  end
 
-            answer = {"title" => title, "artist" => artist, "album" => album, "year" => year, "track" => track}
+  def synchsafe_to_i(bytes)
+    bytes.reduce(0) { |size, byte| (size << 7) | (byte & 0x7f) }
+  end
 
-            puts file + ': ' + size.to_s + ': ' + answer.to_s if is_debug
+  def decode_text_frame(body)
+    return '' if body.nil? || body.empty?
 
-            return answer
-        end
-    end
+    encoding_byte = body.bytes.first
+    payload = body.byteslice(1, body.bytesize - 1) || ''
 
-    return answer
-end
+    decoded =
+      case encoding_byte
+      when 0
+        decode_binary(payload, 'ISO-8859-1')
+      when 1
+        decode_binary(payload, 'UTF-16')
+      when 2
+        decode_binary(payload, 'UTF-16BE')
+      when 3
+        decode_binary(payload, 'UTF-8')
+      else
+        decode_binary(body, 'UTF-8') || decode_binary(body, 'ISO-8859-1')
+      end
 
-def ID3v2 file, is_debug
-    ans = {"title" => "", "artist" => "", "album" => "", "year" => "", "track" => ""}
+    clean_text(decoded.to_s)
+  end
 
-    begin
-        f = File.open(file)
-        a = f.read(10).unpack("A3C7")
-    rescue Errno::EISDIR
-        return ans
-    end
-
-    return ans if a[0] != "ID3"
-
-    taglength_s = ""
-    (4..7).each do |i|
-        temp = a[i].to_s(2)
-        taglength_s += '0' * (7 - temp.length) + temp
-    end
-    taglength = taglength_s.to_i(2)
-
-    puts file + ': ' + taglength.to_s + ': ' + a.to_s if is_debug
-
-    while f.pos < taglength
-        a = f.read(10).unpack("A4C6")
-        framelength = (a[1].to_s(2) + a[2].to_s(2) + a[3].to_s(2) + a[4].to_s(2)).to_i(2)
-        begin
-            t = f.read(framelength)
-
-            if is_debug and t.size < 100 and framelength > 0
-                puts ARGV[0] + ': ' + taglength.to_s + ': ' + a.to_s
-                puts t
-            end
-
-            if ["TIT2", "TPE1", "TPE2", "TRCK", "TALB", "TYER"].include? a[0]
-                res = ""
-                t.each_char{ |c| res += c if c >= ' ' and c <= 'z' }
-                res.strip!
-
-                case a[0]
-                    when "TIT2" then ans["title"] = res
-                    when "TPE1", "TPE2" then ans["artist"] = res
-                    when "TYER" then ans["year"] = res
-                    when "TALB" then ans["album"] = res
-                    when "TRCK" then begin
-                        res = res[0..res.index("/") - 1] if res.include?("/")
-                        res = "0" + res if res.length == 1
-                        ans["track"] = res
-                    end
-            end
-        end
-        rescue RangeError
-        rescue NoMemoryError
-        end
-    end
-
-    return ans
-end
-
-def parse file, default_choice, is_debug
-    tagV1 = ID3v1(file, is_debug)
-    tagV2 = ID3v2(file, is_debug)
-
-    if is_debug
-        p tagV1
-        p tagV2
-    end
-
-    result = {}
-
-    ["title", "artist", "album", "year", "track"].each do |s|
-        if tagV1[s] != "" and tagV2[s] != ""
-
-            if tagV1[s].include?(tagV2[s])
-                result[s] = tagV1[s]
-            elsif tagV2[s].include?(tagV1[s])
-                result[s] = tagV2[s]
-            else
-                choice = -1
-                choice = "1" if s == "track" and tagV1[s] != "00" and tagV2[s] == "00"
-                choice = "2" if s == "track" and tagV1[s] == "00" and tagV2[s] != "00"
-
-                tag1IsVarious = (tagV1[s].include?("Various") or (tagV1[s].include?("various")))
-                tag2IsVarious = (tagV2[s].include?("Various") or (tagV2[s].include?("various")))
-
-                choice = "2" if s == "artist" and tag1IsVarious and not tag2IsVarious
-                choice = "1" if s == "artist" and tag2IsVarious and not tag1IsVarious
-
-                if choice == -1
-                    choice = default_choice || "none"
-                    while not ["0", "1", "2"].include? choice do
-                        print "Two variants for " + s + ": " + tagV1[s] + "/" + tagV2[s] + ". Which to use? (1 or 2, or 0 for none): "
-                        choice = $stdin.gets.chomp
-                    end
-                end
-
-                result[s] = tagV1[s] if choice == "1"
-                result[s] = tagV2[s] if choice == "2"
-                result[s] = "" if choice == "0"
-            end
-
-        elsif tagV1[s] != ""
-            result[s] = tagV1[s]
-        elsif tagV2[s] != ""
-            result[s] = tagV2[s]
-        end
-    end
-
-    return result
-end
-
-def relocate file, default_choice, is_debug
-    parse_result = parse(file, default_choice, is_debug)
-
-    if parse_result["artist"] and parse_result["title"]
-        title = parse_result["title"] + ".mp3"
-        title = parse_result["track"] + " - " + title if parse_result["track"]
-        title.gsub!('/', '_')
-
-        artist = parse_result["artist"].gsub('/', '_')
-        
-        album = ""
-        if parse_result["album"] and parse_result["year"]
-            album = parse_result["year"] + " - " + parse_result["album"]
-        elsif parse_result["album"]
-            album = parse_result["album"]
-        elsif parse_result["year"]
-            album = parse_result["year"]
-        end
-        album.gsub!('/', '_')
-
-        if not is_debug
-            begin
-                FileUtils.mkdir_p(artist + '/' + album)
-
-                dest = artist + '/'
-                dest += album + '/' if album != ""
-                dest += title
-
-                FileUtils.mv(file, dest) if file != dest
-            rescue ArgumentError
-            end
-        end
+  def frame_size(frame_header, version_major)
+    size_bytes = frame_header.byteslice(4, 4).bytes
+    if version_major == 4
+      synchsafe_to_i(size_bytes)
     else
-        puts file + ": No ID3 information" if not is_debug
+      size_bytes.pack('C*').unpack('N').first
     end
+  end
+
+  def skip_extended_header(file, version_major, tag_end)
+    size_bytes = file.read(4)
+    return if size_bytes.nil? || size_bytes.bytesize < 4
+
+    size = version_major == 4 ? synchsafe_to_i(size_bytes.bytes) : size_bytes.unpack('N').first
+    to_skip = version_major == 4 ? size - 4 : size
+    return if to_skip <= 0
+
+    remaining = tag_end - file.pos
+    return if remaining <= 0
+
+    file.seek([to_skip, remaining].min, IO::SEEK_CUR)
+  end
+
+  def parse_id3v2(file, options = default_options)
+    ans = EMPTY_TAG.dup
+
+    File.open(file, 'rb') do |f|
+      header = f.read(10)
+      return ans if header.nil? || header.bytesize < 10 || header.byteslice(0, 3) != 'ID3'
+
+      bytes = header.bytes
+      version_major = bytes[3]
+      flags = bytes[5]
+      tag_size = synchsafe_to_i(bytes[6, 4])
+      tag_end = 10 + tag_size
+
+      debug("#{file}: ID3v2.#{version_major} tag size #{tag_size}", options)
+      skip_extended_header(f, version_major, tag_end) if (flags & 0x40) != 0
+
+      while f.pos + 10 <= tag_end
+        frame_header = f.read(10)
+        break if frame_header.nil? || frame_header.bytesize < 10
+        break if frame_header.bytes.all?(&:zero?)
+
+        frame_id = frame_header.byteslice(0, 4)
+        break unless frame_id =~ /\A[A-Z0-9]{4}\z/
+
+        size = frame_size(frame_header, version_major)
+        break if size <= 0
+
+        if f.pos + size > tag_end
+          warn_user("#{file}: skipping oversized ID3v2 frame #{frame_id}")
+          break
+        end
+
+        body = f.read(size)
+        next unless TEXT_FRAMES.include?(frame_id)
+
+        value = decode_text_frame(body)
+        debug("#{file}: #{frame_id}=#{value}", options)
+
+        case frame_id
+        when 'TIT2'
+          ans['title'] = value
+        when 'TPE1'
+          ans['artist'] = value
+        when 'TPE2'
+          ans['artist'] = value if blank?(ans['artist'])
+        when 'TALB'
+          ans['album'] = value
+        when 'TYER', 'TDRC'
+          ans['year'] = value[/\d{4}/] || value
+        when 'TRCK'
+          ans['track'] = normalize_track(value).to_s
+        end
+      end
+    end
+
+    ans
+  rescue Errno::EISDIR, Errno::ENOENT, Errno::EACCES, IOError => e
+    warn_user("#{file}: #{e.message}")
+    ans
+  rescue Encoding::CompatibilityError, Encoding::InvalidByteSequenceError => e
+    warn_user("#{file}: cannot decode ID3v2 tag: #{e.message}")
+    ans
+  end
+
+  def normalize_track(value)
+    track = clean_text(value).split('/').first.to_s.strip
+    return nil if track.empty?
+
+    if track =~ /\A\d+\z/
+      number = track.to_i
+      return nil if number <= 0
+
+      return format('%02d', number)
+    end
+
+    track
+  end
+
+  def parse_tags(file, default_choice, options = default_options)
+    tag_v1 = parse_id3v1(file, options)
+    tag_v2 = parse_id3v2(file, options)
+
+    debug("#{file}: ID3v1 #{tag_v1}", options)
+    debug("#{file}: ID3v2 #{tag_v2}", options)
+
+    result = EMPTY_TAG.dup
+
+    EMPTY_TAG.keys.each do |field|
+      result[field] = choose_value(field, tag_v1[field], tag_v2[field], default_choice)
+    end
+
+    result
+  end
+
+  def choose_value(field, first, second, default_choice)
+    first = clean_text(first)
+    second = clean_text(second)
+
+    return second if blank?(first)
+    return first if blank?(second)
+    return first if first.include?(second)
+    return second if second.include?(first)
+
+    choice = automatic_choice(field, first, second) || default_choice
+    until %w[0 1 2].include?(choice)
+      print "Two variants for #{field}: #{first}/#{second}. Which to use? (1 or 2, or 0 for none): "
+      choice = $stdin.gets.to_s.chomp
+    end
+
+    return first if choice == '1'
+    return second if choice == '2'
+
+    ''
+  end
+
+  def automatic_choice(field, first, second)
+    if field == 'track'
+      return '1' if normalize_track(first) && !normalize_track(second)
+      return '2' if normalize_track(second) && !normalize_track(first)
+    end
+
+    if field == 'artist'
+      first_various = first.downcase.include?('various')
+      second_various = second.downcase.include?('various')
+      return '2' if first_various && !second_various
+      return '1' if second_various && !first_various
+    end
+
+    nil
+  end
+
+  def build_destination(tags)
+    artist = safe_segment(tags['artist'])
+    title = safe_segment(tags['title'])
+    return nil if artist.nil? || title.nil?
+
+    album = album_segment(tags)
+    track = normalize_track(tags['track'])
+    filename = [track, "#{title}.mp3"].compact.join(' - ')
+
+    album ? File.join(artist, album, filename) : File.join(artist, filename)
+  end
+
+  def album_segment(tags)
+    album = safe_segment(tags['album'])
+    year = safe_segment(tags['year'])
+
+    return "#{year} - #{album}" if album && year
+    return album if album
+    return year if year
+
+    nil
+  end
+
+  def move_file(file, dest, options)
+    return false if dest.nil?
+
+    src_path = File.expand_path(file)
+    dest_path = File.expand_path(dest)
+    return false if src_path == dest_path
+
+    if File.exist?(dest_path) && !File.identical?(src_path, dest_path)
+      unless options.force
+        warn_user("#{file}: destination exists, skipping: #{dest}")
+        return false
+      end
+    end
+
+    if options.dry_run
+      puts "Would move #{file} -> #{dest}"
+      return true
+    end
+
+    FileUtils.mkdir_p(File.dirname(dest_path))
+    FileUtils.rm_f(dest_path) if options.force && File.exist?(dest_path)
+    FileUtils.mv(file, dest_path)
+    true
+  rescue SystemCallError, ArgumentError => e
+    warn_user("#{file}: cannot move to #{dest}: #{e.message}")
+    false
+  end
+
+  def relocate(file, options)
+    tags = parse_tags(file, options.default_choice, options)
+    dest = build_destination(tags)
+
+    unless dest
+      warn_user("#{file}: No usable ID3 artist/title information")
+      return false
+    end
+
+    move_file(file, dest, options)
+  end
+
+  def audio_file?(file)
+    return false if File.directory?(file)
+
+    file_type = IO.popen(['file', file], in: :close, err: :close) { |io| io.read }
+    normalized = file_type.downcase
+    normalized.include?('mpeg adts') ||
+      normalized.include?('layer iii') ||
+      normalized.include?('mp3') ||
+      (File.extname(file).casecmp('.mp3').zero? && normalized.include?('audio'))
+  rescue Errno::ENOENT
+    File.extname(file).casecmp('.mp3').zero?
+  rescue Encoding::CompatibilityError, SystemCallError => e
+    warn_user("#{file}: cannot inspect file type: #{e.message}")
+    false
+  end
+
+  def current_directory_files
+    Dir.glob('*').reject { |file| File.directory?(file) }
+  end
+
+  def recursive_files
+    files = []
+    Find.find('.') { |file| files << file unless File.directory?(file) }
+    files
+  end
+
+  def parse_current_directory(options)
+    current_directory_files.each { |file| relocate(file, options) if audio_file?(file) }
+  end
+
+  def parse_recursively(options)
+    recursive_files.each { |file| relocate(file, options) if audio_file?(file) }
+  end
+
+  def shallow_parsed_file?(file)
+    parts = file.split('/')
+    parts.size <= 4 && parts.size >= 3
+  end
+
+  def plain_song_name(file)
+    File.basename(file).sub(/\A\d+\s*-\s*/, '')
+  end
+
+  def list(options)
+    recursive_files.each do |file|
+      next unless shallow_parsed_file?(file)
+      next unless audio_file?(file)
+
+      move_file(file, File.join('.', plain_song_name(file)), options)
+    end
+  end
+
+  def mix(options)
+    recursive_files.each do |file|
+      next unless shallow_parsed_file?(file)
+      next unless audio_file?(file)
+
+      parts = file.split('/')
+      artist = safe_segment(parts[1])
+      next unless artist
+
+      new_file = File.join('.', "#{artist} - #{plain_song_name(file)}")
+      move_file(file, new_file, options)
+    end
+  end
+
+  def cleanup_empty_directories(root, options)
+    directories = []
+    Find.find(root) { |entry| directories << entry if File.directory?(entry) && entry != root }
+
+    directories.sort_by { |dir| -dir.length }.each do |dir|
+      if options.dry_run
+        puts "Would remove empty directory #{dir}" if directory_empty?(dir)
+      else
+        Dir.rmdir(dir)
+      end
+    rescue Errno::ENOTEMPTY, Errno::ENOENT
+      next
+    rescue SystemCallError => e
+      warn_user("#{dir}: cannot remove directory: #{e.message}")
+    end
+  end
+
+  def directory_empty?(dir)
+    (Dir.entries(dir) - %w[. ..]).empty?
+  rescue SystemCallError
+    false
+  end
+
+  def parse_arguments(argv)
+    options = default_options
+    legacy_debug = false
+    args = argv.map do |arg|
+      case arg
+      when 'debug'
+        legacy_debug = true
+        '--debug'
+      when /\Adefault=(.+)\z/
+        "--default=#{$1}"
+      else
+        arg
+      end
+    end
+
+    parser = OptionParser.new do |opts|
+      opts.banner = "Usage: mptree [options] #{MODES.join('|')}"
+      opts.on('-n', '--dry-run', 'Print planned changes without moving files') { options.dry_run = true }
+      opts.on('-f', '--force', 'Overwrite existing destination files') { options.force = true }
+      opts.on('-d', '--debug', 'Print tag parsing details') { options.debug = true }
+      opts.on('--default=CHOICE', 'Resolve tag conflicts with 1, 2, or 0') { |value| options.default_choice = value }
+      opts.on('-h', '--help', 'Show help') do
+        puts opts
+        return [nil, options, 0]
+      end
+    end
+
+    parser.permute!(args)
+    options.dry_run = true if legacy_debug
+
+    if options.default_choice && !%w[0 1 2].include?(options.default_choice)
+      warn_user('--default must be 0, 1, or 2')
+      return [nil, options, 1]
+    end
+
+    mode = args.shift
+    unless MODES.include?(mode)
+      warn_user(parser.to_s)
+      return [nil, options, 1]
+    end
+
+    [mode, options, 0]
+  rescue OptionParser::ParseError => e
+    warn_user(e.message)
+    [nil, options, 1]
+  end
+
+  def run(argv = ARGV)
+    mode, options, status = parse_arguments(argv)
+    return status unless status.zero? && mode
+
+    case mode
+    when 'parse'
+      parse_current_directory(options)
+    when 'recursive_parse'
+      parse_recursively(options)
+    when 'list'
+      list(options)
+    when 'mix'
+      mix(options)
+    when 'clear'
+      cleanup_empty_directories('.', options)
+      return 0
+    end
+
+    cleanup_empty_directories('.', options)
+    0
+  end
 end
 
-a = ARGV.clone.keep_if{|s| s.include?("default=") }
-default_choice = ((a.any?) ? a[0].split('=')[1] : nil)
-
-available_modes = ["parse", "recursive_parse", "list", "mix", "clear"]
-a = ARGV.clone.keep_if{|s| available_modes.include? s }
-exit if a.empty?
-mode = a[0]
-
-is_debug = ARGV.include?("debug")
-
-case mode
-    when "parse" then begin
-        Dir.glob("*").each do |file|
-            begin
-                file_type = IO.popen(["file", file], in: :close, err: :close).read.chomp
-                if file_type.include?("Audio") or file_type.include?("MPEG")
-                    relocate(file, default_choice, is_debug)
-                end
-            rescue Encoding::CompatibilityError
-            end
-        end
-    end
-
-    when "recursive_parse" then begin
-        Find.find('.') do |file|
-            begin
-                file_type = IO.popen(["file", file], in: :close, err: :close).read.chomp
-                if file_type.include?("Audio") or file_type.include?("MPEG")
-                    relocate(file, default_choice, is_debug)
-                end
-            rescue Encoding::CompatibilityError
-            end
-        end
-    end
-
-    when "list" then begin
-        Find.find('.') do |file|
-            begin
-                next if file.split('/').size > 4
-                next if File.directory? file
-
-                file_type = IO.popen(["file", file], in: :close, err: :close).read.chomp
-                new_file = './' + file.split('/')[-1].split(' - ')[-1]
-                FileUtils.mv(file, new_file) if file != new_file
-            rescue Encoding::CompatibilityError
-            end
-        end
-    end
-
-    when "mix" then begin
-        Find.find('.') do |file|
-            begin
-                next if file.split('/').size > 4
-                next if File.directory? file
-
-                file_type = IO.popen(["file", file], in: :close, err: :close).read.chomp
-                if file_type.include?("Audio") or file_type.include?("MPEG")
-                    new_file = './' + file.split('/')[1] + ' - ' + file.split('/')[-1].split(' - ')[-1]
-                    FileUtils.mv(file, new_file)
-                end
-            rescue Encoding::CompatibilityError
-            end
-        end
-    end
-end
-
-3.times do
-    Dir.glob('**/*').each do |entry|
-        if File.directory? Dir.getwd + '/' + entry
-            FileUtils.rmdir entry
-        end
-    end
-end
+exit MPTree.run(ARGV) if __FILE__ == $PROGRAM_NAME

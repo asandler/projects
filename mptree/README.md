@@ -3,6 +3,17 @@ Tool for managing mp3 files in music directory. Use it with care.
 
 Place "mptree" script somewhere, where $PATH environment variable points, and watch the magic:
 
+Run `mptree --help` to see supported options. The most important flags are:
+
+```
+  -n, --dry-run          print planned changes without moving files
+  -f, --force            overwrite existing destination files
+  -d, --debug            print ID3 parsing details
+      --default=CHOICE   resolve tag conflicts with 1, 2, or 0
+```
+
+For backward compatibility, `mptree parse debug` still behaves as a dry run with debug output, and `default=1` is accepted as an alias for `--default=1`.
+
 1) mptree parse
 
    takes all the mess of musical files in the current directory, for example:
@@ -75,3 +86,11 @@ Place "mptree" script somewhere, where $PATH environment variable points, and wa
 5) mptree clear
 
    deletes all empty directories (automatically runs after each task)
+
+## Development
+
+Tests are written with Ruby's built-in minitest:
+
+```
+ruby test/test_mptree.rb
+```
