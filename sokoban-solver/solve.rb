@@ -1,197 +1,371 @@
-class Map
-  def initialize ar
-    @pool = ar.map{|s| s.chars}
-    find_me
-    build_admissible_set
+require 'set'
+
+State = Struct.new(:boxes, :player, :key)
+
+Solution = Struct.new(:solved, :states, :expanded, :visited) do
+  def solved?
+    solved
   end
 
-  def find_me
-    @pool.each_with_index do |row, i|
-      row.each_with_index do |c, j|
-        @me_x, @me_y = i, j if c == 'm' or c == 'M'
-      end
-    end
+  def pushes
+    return nil unless solved?
+
+    states.length - 1
+  end
+end
+
+class Board
+  WALL = '@'
+  FLOOR = '.'
+  GOAL = 'x'
+  BOX = '#'
+  BOX_ON_GOAL = 'X'
+  PLAYER = 'm'
+  PLAYER_ON_GOAL = 'M'
+
+  DIRECTIONS = [
+    [0, -1],
+    [0, 1],
+    [-1, 0],
+    [1, 0]
+  ].freeze
+
+  attr_reader :height, :width, :goals, :dead_squares, :initial_state
+
+  def self.from_file(path)
+    new(File.readlines(path, chomp: true))
   end
 
-  def build_admissible_set
-    @admissible_set = []
-    @pool.each_with_index do |row, i|
-      row.each_with_index do |c, j|
-        next if c == '@'
-        if c == 'x' or c == 'X' or c == '#'
-          @admissible_set << [i, j]
+  def initialize(lines)
+    lines = lines.map(&:chomp)
+    raise ArgumentError, 'level is empty' if lines.empty?
+
+    @height = lines.length
+    @width = lines.map(&:length).max || 0
+    @walkable = Set.new
+    @goals = Set.new
+    boxes = []
+    player = nil
+    player_count = 0
+
+    lines.each_with_index do |line, row|
+      line.chars.each_with_index do |cell, col|
+        pos = encode(row, col)
+
+        case cell
+        when WALL
           next
-        end
-
-        neigh = [@pool[i][j-1], @pool[i][j+1], @pool[i-1][j], @pool[i+1][j]]
-        if neigh.select{|n| n == '@'}.size >= 2
-          next
-        end
-
-        if neigh.select{|n| n == '@'}.size == 1
-          flag = false
-          if @pool[i][j-1] == '@' or @pool[i][j+1] == '@'
-            tmp = i
-            while @pool[tmp-1][j] != '@'
-              flag |= (['x', 'X'].include? @pool[tmp][j])
-              tmp -= 1
-            end
-            tmp = i
-            while @pool[tmp+1][j] != '@'
-              flag |= (['x', 'X'].include? @pool[tmp][j])
-              tmp += 1
-            end
-          else
-            tmp = j
-            while @pool[i][tmp-1] != '@'
-              flag |= (['x', 'X'].include? @pool[i][tmp])
-              tmp -= 1
-            end
-            tmp = j
-            while @pool[i][tmp+1] != '@'
-              flag |= (['x', 'X'].include? @pool[i][tmp])
-              tmp += 1
-            end
-          end
-
-          @admissible_set << [i, j] if flag
+        when FLOOR
+          @walkable.add(pos)
+        when GOAL
+          @walkable.add(pos)
+          @goals.add(pos)
+        when BOX
+          @walkable.add(pos)
+          boxes << pos
+        when BOX_ON_GOAL
+          @walkable.add(pos)
+          @goals.add(pos)
+          boxes << pos
+        when PLAYER
+          @walkable.add(pos)
+          player = pos
+          player_count += 1
+        when PLAYER_ON_GOAL
+          @walkable.add(pos)
+          @goals.add(pos)
+          player = pos
+          player_count += 1
         else
-          @admissible_set << [i, j]
-        end
-      end
-    end
-  end
-
-  def neighbours
-    answer = []
-    [[0, -1], [0, 1], [-1, 0], [1, 0]].each do |x, y|
-
-      if @pool[@me_x + x][@me_y + y] == '.'
-        answer << Marshal.load(Marshal.dump(self))
-        if @pool[@me_x][@me_y] == 'm'
-          answer[-1].set @me_x, @me_y, '.'
-          answer[-1].set @me_x + x, @me_y + y, 'm'
-        else
-          answer[-1].set @me_x, @me_y, 'x'
-          answer[-1].set @me_x + x, @me_y + y, 'm'
-        end
-      end
-
-      if @pool[@me_x + x][@me_y + y] == 'x'
-        answer << Marshal.load(Marshal.dump(self))
-        if @pool[@me_x][@me_y] == 'm'
-          answer[-1].set @me_x, @me_y, '.'
-          answer[-1].set @me_x + x, @me_y + y, 'M'
-        else
-          answer[-1].set @me_x, @me_y, 'x'
-          answer[-1].set @me_x + x, @me_y + y, 'M'
-        end
-      end
-
-      if @pool[@me_x + x][@me_y + y] == '#' and (@pool[@me_x + x * 2][@me_y + y * 2] == 'x' or @pool[@me_x + x * 2][@me_y + y * 2] == '.')
-        answer << Marshal.load(Marshal.dump(self))
-        if @pool[@me_x][@me_y] == 'm'
-          answer[-1].set @me_x, @me_y, '.'
-        else
-          answer[-1].set @me_x, @me_y, 'x'
-        end
-
-        answer[-1].set @me_x + x, @me_y + y, 'm'
-
-        if @pool[@me_x + x * 2][@me_y + y * 2] == 'x'
-          answer[-1].set @me_x + x * 2, @me_y + y * 2, 'X'
-        else
-          answer[-1].set @me_x + x * 2, @me_y + y * 2, '#'
-        end
-      end
-
-      if @pool[@me_x + x][@me_y + y] == 'X' and (@pool[@me_x + x * 2][@me_y + y * 2] == 'x' or @pool[@me_x + x * 2][@me_y + y * 2] == '.')
-        answer << Marshal.load(Marshal.dump(self))
-        if @pool[@me_x][@me_y] == 'm'
-          answer[-1].set @me_x, @me_y, '.'
-        else
-          answer[-1].set @me_x, @me_y, 'x'
-        end
-
-        answer[-1].set @me_x + x, @me_y + y, 'M'
-
-        if @pool[@me_x + x * 2][@me_y + y * 2] == 'x'
-          answer[-1].set @me_x + x * 2, @me_y + y * 2, 'X'
-        else
-          answer[-1].set @me_x + x * 2, @me_y + y * 2, '#'
+          raise ArgumentError, "unknown cell #{cell.inspect} at row #{row + 1}, column #{col + 1}"
         end
       end
     end
 
-    answer.each{|a| a.find_me }
-    return answer
+    raise ArgumentError, 'level must contain exactly one player' unless player_count == 1
+
+    @initial_state = State.new(boxes.sort.freeze, player, nil)
+    @dead_squares = build_dead_squares.freeze
   end
 
-  def hash
-    return @pool.map{|ar| ar.join}.join.hash
-  end
+  def solve(max_states: nil)
+    start_key = state_key(@initial_state.boxes, @initial_state.player)
+    start = State.new(@initial_state.boxes, @initial_state.player, start_key)
+    queue = [start]
+    head = 0
+    parents = { start_key => nil }
+    states = { start_key => start }
+    visited = Set[start_key]
+    expanded = 0
 
-  def set x, y, symb
-    @pool[x][y] = symb
-  end
+    while head < queue.length
+      state = queue[head]
+      head += 1
+      expanded += 1
 
-  def final?
-    @pool.each_with_index do |row, i|
-      row.each_with_index do |c, j|
-        return false if c == '#'
-      end
+      return solved_solution(state.key, parents, states, expanded, visited.size) if solved_boxes?(state.boxes)
+      return Solution.new(false, [], expanded, visited.size) if max_states && expanded >= max_states
+
+      enqueue_pushes(state, queue, parents, states, visited)
     end
-    return true
+
+    Solution.new(false, [], expanded, visited.size)
   end
 
-  def pretty_print
-    @pool.each{|ar| puts ar.join}
+  def solved_boxes?(boxes)
+    boxes.all? { |box| @goals.include?(box) }
+  end
+
+  def render(state = @initial_state)
+    boxes = state.boxes.to_set
+
+    (0...@height).map do |row|
+      (0...@width).map do |col|
+        pos = encode(row, col)
+
+        if boxes.include?(pos)
+          goal?(pos) ? BOX_ON_GOAL : BOX
+        elsif pos == state.player
+          goal?(pos) ? PLAYER_ON_GOAL : PLAYER
+        elsif goal?(pos)
+          GOAL
+        elsif walkable?(pos)
+          FLOOR
+        else
+          WALL
+        end
+      end.join
+    end.join("\n")
+  end
+
+  def pretty_print(state = @initial_state)
+    puts render(state)
     puts
   end
 
   def admissible_print
-    @pool.each_with_index do |row, i|
-      row.each_with_index do |c, j|
-        if @admissible_set.include? [i, j]
-          print 1
-        else
-          print 0
-        end
-      end
-      puts
-    end
+    puts admissible_mask
     puts
   end
-end
 
-def solve_sokoban start
-  visited = {}
-  queue = [start]
-  pred = {}
-  while queue.size > 0
-    top = queue.shift
-    visited[top.hash] = true
-    if top.final?
-      path = []
-      while top.hash != start.hash
-        path.unshift top
-        top = pred[top]
-      end
-      path.unshift start
-      path.each{|pos| pos.pretty_print}
+  def dead_square_print
+    puts dead_square_mask
+    puts
+  end
 
-      return "Solved"
-    end
-    top.neighbours.each do |n|
-      if not visited[n.hash]
-        pred[n] = top
-        visited[n.hash] = true
-        queue << n
+  private
+
+  def enqueue_pushes(state, queue, parents, states, visited)
+    boxes = state.boxes
+    boxes_set = boxes.to_set
+    reachable = reachable_positions(boxes_set, state.player)
+
+    boxes.each do |box|
+      DIRECTIONS.each do |drow, dcol|
+        stand = adjacent(box, -drow, -dcol)
+        destination = adjacent(box, drow, dcol)
+
+        next unless stand && destination
+        next unless reachable.include?(stand)
+        next unless free_for_box?(destination, boxes_set)
+        next if @dead_squares.include?(destination)
+
+        new_boxes = boxes.map { |pos| pos == box ? destination : pos }.sort.freeze
+        key = state_key(new_boxes, box)
+        next if visited.include?(key)
+
+        new_state = State.new(new_boxes, box, key)
+        visited.add(key)
+        parents[key] = state.key
+        states[key] = new_state
+        queue << new_state
       end
     end
   end
-  return "No solution"
+
+  def solved_solution(goal_key, parents, states, expanded, visited)
+    path = []
+    key = goal_key
+
+    while key
+      path.unshift(states.fetch(key))
+      key = parents.fetch(key)
+    end
+
+    Solution.new(true, path, expanded, visited)
+  end
+
+  def reachable_positions(boxes, start)
+    visited = Set[start]
+    queue = [start]
+    head = 0
+
+    while head < queue.length
+      pos = queue[head]
+      head += 1
+
+      DIRECTIONS.each do |drow, dcol|
+        next_pos = adjacent(pos, drow, dcol)
+        next unless next_pos
+        next if visited.include?(next_pos)
+        next unless free_for_player?(next_pos, boxes)
+
+        visited.add(next_pos)
+        queue << next_pos
+      end
+    end
+
+    visited
+  end
+
+  def state_key(boxes, player)
+    canonical_player = reachable_positions(boxes.to_set, player).min
+
+    "#{boxes.join(',')}|#{canonical_player}"
+  end
+
+  def build_dead_squares
+    reachable = box_goal_reachable_positions
+    dead = Set.new
+
+    @walkable.each do |pos|
+      next if reachable.include?(pos)
+
+      dead.add(pos)
+    end
+
+    dead
+  end
+
+  def box_goal_reachable_positions
+    reachable = @goals.dup
+    queue = @goals.to_a
+    head = 0
+
+    while head < queue.length
+      pos = queue[head]
+      head += 1
+
+      DIRECTIONS.each do |drow, dcol|
+        previous_box = adjacent(pos, -drow, -dcol)
+        player_stand = previous_box && adjacent(previous_box, -drow, -dcol)
+
+        next unless previous_box && player_stand
+        next unless walkable?(previous_box) && walkable?(player_stand)
+        next if reachable.include?(previous_box)
+
+        reachable.add(previous_box)
+        queue << previous_box
+      end
+    end
+
+    reachable
+  end
+
+  def admissible_mask
+    mask { |pos| walkable?(pos) && !@dead_squares.include?(pos) }
+  end
+
+  def dead_square_mask
+    mask { |pos| @dead_squares.include?(pos) }
+  end
+
+  def mask
+    (0...@height).map do |row|
+      (0...@width).map do |col|
+        yield(encode(row, col)) ? '1' : '0'
+      end.join
+    end.join("\n")
+  end
+
+  def adjacent(pos, drow, dcol)
+    row = pos / @width
+    col = pos % @width
+    next_row = row + drow
+    next_col = col + dcol
+
+    return nil if next_row.negative? || next_row >= @height
+    return nil if next_col.negative? || next_col >= @width
+
+    encode(next_row, next_col)
+  end
+
+  def encode(row, col)
+    row * @width + col
+  end
+
+  def goal?(pos)
+    @goals.include?(pos)
+  end
+
+  def walkable?(pos)
+    @walkable.include?(pos)
+  end
+
+  def free_for_player?(pos, boxes)
+    walkable?(pos) && !boxes.include?(pos)
+  end
+
+  def free_for_box?(pos, boxes)
+    walkable?(pos) && !boxes.include?(pos)
+  end
 end
 
-Map.new(File.readlines(ARGV[0]).map{|s| s.chomp}).admissible_print
-puts solve_sokoban(Map.new(File.readlines(ARGV[0]).map{|s| s.chomp}))
+Map = Board
+
+def solve_sokoban(start)
+  solution = start.solve
+  solution.states.each { |state| start.pretty_print(state) } if solution.solved?
+
+  solution.solved? ? 'Solved' : 'No solution'
+end
+
+def usage
+  'Usage: ruby solve.rb LEVEL [--quiet] [--debug]'
+end
+
+def run_cli(argv)
+  debug = false
+  quiet = false
+  paths = []
+
+  argv.each do |arg|
+    case arg
+    when '--debug'
+      debug = true
+    when '--quiet'
+      quiet = true
+    when '-h', '--help'
+      puts usage
+      return 0
+    else
+      paths << arg
+    end
+  end
+
+  unless paths.length == 1
+    warn usage
+    return 1
+  end
+
+  board = Board.from_file(paths.first)
+  if debug
+    puts 'Dead-square mask:'
+    board.dead_square_print
+  end
+
+  solution = board.solve
+  if solution.solved?
+    solution.states.each { |state| board.pretty_print(state) } unless quiet
+    puts "Solved in #{solution.pushes} pushes (expanded #{solution.expanded}, visited #{solution.visited})"
+    0
+  else
+    puts "No solution (expanded #{solution.expanded}, visited #{solution.visited})"
+    2
+  end
+rescue StandardError => e
+  warn "error: #{e.message}"
+  1
+end
+
+exit run_cli(ARGV) if __FILE__ == $PROGRAM_NAME
