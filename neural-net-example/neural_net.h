@@ -2,11 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <iostream>
 #include <random>
+#include <stdexcept>
 #include <vector>
-
-using namespace std;
 
 enum ActivationType {
     ACTIVATION_NONE,
@@ -27,7 +27,8 @@ public:
         , parentInputIndex(parentInputIndex)
         , isFirstLayer(isFirstLayer)
         , activationType(activationType)
-        , ExternalGradient(0)
+        , Delta(0)
+        , Output(0)
     {
     }
 
@@ -35,51 +36,45 @@ public:
         Output = 0;
 
         if (activationType == ACTIVATION_SOFTMAX) {
-            for (size_t i = 0; i < Inputs.size(); ++i) {
-                Output += exp(Inputs[i]->GetOutput());
-            }
-            Output = exp(Inputs[parentInputIndex]->GetOutput()) / Output;
-
+            Output = weightedInput();
         } else {
-            for (size_t i = 0; i < Inputs.size(); ++i) {
-                Output += Weights[i] * Inputs[i]->GetOutput();
-            }
-            Output = activation(Output);
+            Output = activation(weightedInput());
         }
     }
 
-    void Backward() {
-        // gradient will store either an externally set value from ExternalGradient,
-        // or a sum of gradients of its parents. These values are never both positive
-
-        double gradient = ExternalGradient;                        // non-zero only for output layer
+    void ComputeHiddenDelta() {
+        double downstreamDelta = 0;
         for (size_t j = 0; j < Parents.size(); ++j) {
-            gradient += Parents[j]->GetGradient(parentInputIndex); // non-zero only for inner layers
-            //cerr << "j = " << j << ", gradient = " << gradient << endl;
+            downstreamDelta += Parents[j]->GetWeight(parentInputIndex) * Parents[j]->GetDelta();
         }
 
+        Delta = activationDerivative(Output) * downstreamDelta;
+    }
+
+    void UpdateWeights() {
         for (size_t i = 0; i < Inputs.size(); ++i) {
-            // update gradient by chain rule
-            //cerr << parentInputIndex << ": Backward(): gradient = " << gradient << ", deriv = " << activationDerivative(Output) << ", Inputs[i] = " << Inputs[i]->GetOutput() << endl;
-
-            Gradients[i] = gradient * activationDerivative(Output) * Inputs[i]->GetOutput();
-
-            //cerr << parentInputIndex << ": Grad[i] = " << Gradients[i] << ", update = " << learningRate * Gradients[i] << endl;
-
-            // update weights by gradient descent
+            Gradients[i] = Delta * Inputs[i]->GetOutput();
             Weights[i] += learningRate * Gradients[i];
         }
     }
 
-    double GetOutput() {
+    double GetOutput() const {
         return Output;
     }
 
-    double GetGradient(size_t index) {
+    void SetOutput(double val) {
+        Output = val;
+    }
+
+    double GetGradient(size_t index) const {
         return Gradients[index];
     }
 
-    vector<double>& GetWeights() {
+    double GetWeight(size_t index) const {
+        return Weights[index];
+    }
+
+    std::vector<double>& GetWeights() {
         return Weights;
     }
 
@@ -100,10 +95,32 @@ public:
     }
 
     void SetExternalGradient(double grad) {
-        ExternalGradient = grad;
+        Delta = grad;
+    }
+
+    void SetDelta(double delta) {
+        Delta = delta;
+    }
+
+    void SetOutputLayerDelta(double target) {
+        Delta = (target - Output) * activationDerivative(Output);
+    }
+
+    double GetDelta() const {
+        return Delta;
     }
 
 private:
+    double weightedInput() const {
+        double result = 0;
+
+        for (size_t i = 0; i < Inputs.size(); ++i) {
+            result += Weights[i] * Inputs[i]->GetOutput();
+        }
+
+        return result;
+    }
+
     double activation(double x) {
         switch (activationType) {
             case ACTIVATION_NONE:
@@ -123,7 +140,7 @@ private:
         }
     }
 
-    double activationDerivative(double x) {
+    double activationDerivative(double x) const {
         switch (activationType) {
             case ACTIVATION_NONE:
                 return 1;
@@ -136,7 +153,7 @@ private:
                     return 0;
                 }
             case ACTIVATION_SOFTMAX:
-                return x * (1 - x);
+                return 1;
             default:
                 return 1;
         }
@@ -148,14 +165,14 @@ private:
     bool isFirstLayer;
     ActivationType activationType;
 
-    double ExternalGradient;
+    double Delta;
     double Output;
 
-    vector<double> Weights;
-    vector<double> Gradients;
+    std::vector<double> Weights;
+    std::vector<double> Gradients;
 
-    vector<Neuron*> Inputs;
-    vector<Neuron*> Parents;
+    std::vector<Neuron*> Inputs;
+    std::vector<Neuron*> Parents;
 };
 
 struct LayerSpec {
@@ -165,16 +182,18 @@ struct LayerSpec {
 
 class NeuralNet {
 public:
-    NeuralNet(vector<LayerSpec> layers, double learningRate)
+    NeuralNet(std::vector<LayerSpec> layers, double learningRate)
         : layers(layers)
     {
+        validateLayers();
+
         // first add the input layer
         for (size_t i = 0; i < layers[0].Size; ++i) {
             neurons.push_back(new Neuron(i, learningRate, true, layers[0].Activation));
         }
 
-        default_random_engine generator(time(0));
-        normal_distribution<double> distribution(0, 1);
+        std::default_random_engine generator(static_cast<unsigned>(std::time(nullptr)));
+        std::normal_distribution<double> distribution(0, 1);
   
         size_t previousLayerStartIndex = 0;
 
@@ -203,15 +222,30 @@ public:
         }
     }
 
-    vector<double> ForwardPass(const vector<double>& inputs) {
-        vector<double> result;
+    NeuralNet(const NeuralNet&) = delete;
+    NeuralNet& operator=(const NeuralNet&) = delete;
+
+    std::vector<double> ForwardPass(const std::vector<double>& inputs) {
+        if (inputs.size() != layers[0].Size) {
+            throw std::runtime_error("ForwardPass: input size does not match input layer size");
+        }
+
+        std::vector<double> result;
 
         for (size_t i = 0; i < layers[0].Size; ++i) {
             neurons[i]->SetInput(inputs[i]);
         }
 
-        for (size_t i = layers[0].Size; i < neurons.size(); ++i) {
-            neurons[i]->Forward();
+        for (size_t layerIdx = 1; layerIdx < layers.size(); ++layerIdx) {
+            size_t layerStartIndex = LayerStartIndex(layerIdx);
+
+            for (size_t j = 0; j < layers[layerIdx].Size; ++j) {
+                neurons[layerStartIndex + j]->Forward();
+            }
+
+            if (layers[layerIdx].Activation == ACTIVATION_SOFTMAX) {
+                NormalizeSoftmaxLayer(layerIdx);
+            }
         }
 
         size_t outputLayerStartIndex = neurons.size() - layers.back().Size;
@@ -226,27 +260,27 @@ public:
     void DumpWeights() {
         size_t neuronsArrayStartIndex = layers[0].Size;
 
-        cerr << "layer\tneuron\tinput\tweight" << endl;
+        std::cerr << "layer\tneuron\tinput\tweight" << std::endl;
 
         for (size_t i = 1; i < layers.size(); ++i) {
             for (size_t j = 0; j < layers[i].Size; ++j) {
-                vector<double>& w = neurons[neuronsArrayStartIndex + j]->GetWeights();
+                std::vector<double>& w = neurons[neuronsArrayStartIndex + j]->GetWeights();
                 for (size_t k = 0; k < w.size(); ++k) {
-                    cerr << i << "\t" << j << "\t" << k << "\t" << w[k] << endl;
+                    std::cerr << i << "\t" << j << "\t" << k << "\t" << w[k] << std::endl;
                 }
             }
             neuronsArrayStartIndex += layers[i].Size;
         }
     }
 
-    vector<double> GetWeights() {
-        vector<double> result;
+    std::vector<double> GetWeights() {
+        std::vector<double> result;
 
         size_t neuronsArrayStartIndex = layers[0].Size;
 
         for (size_t i = 1; i < layers.size(); ++i) {
             for (size_t j = 0; j < layers[i].Size; ++j) {
-                vector<double>& w = neurons[neuronsArrayStartIndex + j]->GetWeights();
+                std::vector<double>& w = neurons[neuronsArrayStartIndex + j]->GetWeights();
                 for (size_t k = 0; k < w.size(); ++k) {
                     result.push_back(w[k]);
                 }
@@ -257,24 +291,86 @@ public:
         return result;
     }
 
-    void BackPropagation(const vector<double>& outputs, const vector<double>& targets) {
+    void BackPropagation(const std::vector<double>& outputs, const std::vector<double>& targets) {
         size_t outputLayerStartIndex = neurons.size() - layers.back().Size;
 
+        if (outputs.size() != layers.back().Size || targets.size() != layers.back().Size) {
+            throw std::runtime_error("BackPropagation: output and target sizes must match output layer size");
+        }
+
         for (size_t i = 0; i < targets.size(); ++i) {
-            //cerr << "SetExternalGradient: " << targets[i] - outputs[i] << endl;
-            if (targets[i] - outputs[i] > 0) {
-                neurons[outputLayerStartIndex + i]->SetExternalGradient(1);
+            if (layers.back().Activation == ACTIVATION_SOFTMAX) {
+                // Softmax with cross-entropy: the output-layer delta simplifies to target - output.
+                neurons[outputLayerStartIndex + i]->SetDelta(targets[i] - outputs[i]);
             } else {
-                neurons[outputLayerStartIndex + i]->SetExternalGradient(-1);
+                neurons[outputLayerStartIndex + i]->SetOutputLayerDelta(targets[i]);
             }
         }
 
-        for (size_t i = neurons.size() - 1; i >= layers[0].Size; --i) {
-            neurons[i]->Backward();
+        for (size_t layerIdx = layers.size() - 1; layerIdx > 1; --layerIdx) {
+            size_t hiddenLayerIdx = layerIdx - 1;
+            size_t hiddenLayerStartIndex = LayerStartIndex(hiddenLayerIdx);
+
+            for (size_t i = 0; i < layers[hiddenLayerIdx].Size; ++i) {
+                neurons[hiddenLayerStartIndex + i]->ComputeHiddenDelta();
+            }
+        }
+
+        for (size_t layerIdx = 1; layerIdx < layers.size(); ++layerIdx) {
+            size_t layerStartIndex = LayerStartIndex(layerIdx);
+
+            for (size_t i = 0; i < layers[layerIdx].Size; ++i) {
+                neurons[layerStartIndex + i]->UpdateWeights();
+            }
         }
     }
 
 private:
-    vector<LayerSpec> layers;
-    vector<Neuron*> neurons;
+    void validateLayers() const {
+        if (layers.empty()) {
+            throw std::runtime_error("NeuralNet: at least one layer is required");
+        }
+
+        for (size_t i = 0; i < layers.size(); ++i) {
+            if (layers[i].Size == 0) {
+                throw std::runtime_error("NeuralNet: layer size must be positive");
+            }
+
+            if (i + 1 < layers.size() && layers[i].Activation == ACTIVATION_SOFTMAX) {
+                throw std::runtime_error("NeuralNet: softmax is only supported on the output layer");
+            }
+        }
+    }
+
+    size_t LayerStartIndex(size_t layerIdx) const {
+        size_t result = 0;
+
+        for (size_t i = 0; i < layerIdx; ++i) {
+            result += layers[i].Size;
+        }
+
+        return result;
+    }
+
+    void NormalizeSoftmaxLayer(size_t layerIdx) {
+        size_t layerStartIndex = LayerStartIndex(layerIdx);
+        double maxLogit = neurons[layerStartIndex]->GetOutput();
+
+        for (size_t i = 1; i < layers[layerIdx].Size; ++i) {
+            maxLogit = std::max(maxLogit, neurons[layerStartIndex + i]->GetOutput());
+        }
+
+        double denominator = 0;
+        for (size_t i = 0; i < layers[layerIdx].Size; ++i) {
+            denominator += std::exp(neurons[layerStartIndex + i]->GetOutput() - maxLogit);
+        }
+
+        for (size_t i = 0; i < layers[layerIdx].Size; ++i) {
+            double numerator = std::exp(neurons[layerStartIndex + i]->GetOutput() - maxLogit);
+            neurons[layerStartIndex + i]->SetOutput(numerator / denominator);
+        }
+    }
+
+    std::vector<LayerSpec> layers;
+    std::vector<Neuron*> neurons;
 };

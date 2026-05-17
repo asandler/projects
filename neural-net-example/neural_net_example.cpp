@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <iostream>
 #include <random>
 #include <vector>
@@ -40,9 +41,9 @@ size_t argmax(const vector<double>& a) {
     }
 
     size_t result = 0;
-    double curMax = -1e9;
+    double curMax = a[0];
 
-    for (size_t i = 0; i < a.size(); ++i) {
+    for (size_t i = 1; i < a.size(); ++i) {
         if (a[i] > curMax) {
             curMax = a[i];
             result = i;
@@ -66,29 +67,6 @@ double sqrDistance(const vector<double>& a, const vector<double>& b) {
     return result;
 }
 
-void printDbgInfo(
-    const vector<double>& inputs,
-    const vector<double>& output,
-    const vector<double>& targets
-) {
-    cerr << "inputs: {";
-    for (size_t i = 0; i < inputs.size(); ++i) {
-        cerr << inputs[i] << ", ";
-    }
-
-    cerr << "}, output: {";
-    for (size_t i = 0; i < output.size(); ++i) {
-        cerr << output[i] << ", ";
-    }
-
-    cerr << "}, targets: {";
-    for (size_t i = 0; i < targets.size(); ++i) {
-        cerr << targets[i] << ", ";
-    }
-
-    cerr << "}" << endl;
-}
-
 int main() {
     NeuralNet N({
         {2, ACTIVATION_SIGMA},
@@ -100,8 +78,9 @@ int main() {
     vector<vector<double>> inputs;
     vector<vector<double>> targets;
 
-    default_random_engine generator(time(0));
+    default_random_engine generator(static_cast<unsigned>(time(nullptr)));
     normal_distribution<double> distribution(0, 1);
+    bernoulli_distribution trainSample(0.5);
 
     for (size_t i = 0; i < 1000; ++i) {
         inputs.push_back({0, 0});
@@ -113,47 +92,21 @@ int main() {
         targets.push_back(targetFn2(inputs[i]));
     }
 
-    N.DumpWeights();
     cout << "Start" << endl;
 
     vector<double> w1;
-    vector<double> w2;
 
     for (size_t epoch = 0; epoch < 10000; ++epoch) {
         double errSquaredSum = 0;
         size_t validationLen = 0;
         size_t errCount = 0;
-        bool printDbg = (epoch % 50 == 0);
-
-        if (printDbg) {
-            cerr << "Epoch " << epoch << endl;
-        }
 
         for (size_t i = 0; i < 1000; ++i) {
             vector<double> output = N.ForwardPass(inputs[i]);
 
-            if (printDbg) {
-                printDbgInfo(inputs[i], output, targets[i]);
-                w1 = N.GetWeights();
-            }
-
-            if (rand() % 100 < 50) {
+            if (trainSample(generator)) {
                 N.BackPropagation(output, targets[i]);
-
-                if (printDbg) {
-                    auto w2 = N.GetWeights();
-                    auto output2 = N.ForwardPass(inputs[i]);
-
-                    cerr << "Weight diff: " << sqrt(sqrDistance(w1, w2)) << endl;
-                    cerr << "Output diff: " << sqrt(sqrDistance(output, output2)) << endl;
-
-                    cerr << "after backprop" << endl;
-                    printDbgInfo(inputs[i], output2, targets[i]);
-                }
             } else {
-                if (printDbg) {
-                    cerr << "added error " << sqrDistance(output, targets[i]) << endl;
-                }
                 if (argmax(output) != argmax(targets[i])) {
                     errCount++;
                 }
@@ -164,6 +117,11 @@ int main() {
 
         double mse = errSquaredSum / validationLen;
         double errRatio = (double) errCount / validationLen;
+
+        if (errRatio < 1e-5) {
+            N.DumpWeights();
+            return 0;
+        }
 
         if (epoch % 50 == 0) {
             cout << "Epoch " << epoch << ", MSE = " << mse << ", errRatio = " << errRatio << endl;
