@@ -30,7 +30,7 @@ set wcm=<Tab>
 
 augroup filetype_settings
   autocmd!
-  autocmd FileType python setlocal omnifunc=pythoncomplete#Complete commentstring=#%s foldmethod=indent softtabstop=4 shiftwidth=4
+  autocmd FileType python setlocal omnifunc=pythoncomplete#Complete commentstring=#%s softtabstop=4 shiftwidth=4
   autocmd FileType html setlocal omnifunc=htmlcomplete#CompleteTags commentstring=<!--%s-->
   autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags commentstring=<!--%s-->
   autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
