@@ -40,6 +40,11 @@ augroup filetype_settings
   autocmd FileType go nnoremap <buffer> <silent> <F6> :write<CR>:silent !gofmt -w %:p<CR>:edit!<CR>:redraw!<CR>
 augroup END
 
+augroup gofmt_go_files
+  autocmd!
+  autocmd BufWritePre *.go silent! execute '%!gofmt'
+augroup END
+
 menu EOL.unix :setlocal fileformat=unix<CR>
 menu EOL.dos  :setlocal fileformat=dos<CR>
 menu EOL.mac  :setlocal fileformat=mac<CR>
